@@ -1,0 +1,27 @@
+{
+  "name": "snippetvault",
+  "license": "MIT",
+  "version": "0.1.0",
+  "scripts": {
+    "start": "node server/app.js",
+    "dev": "concurrently \"node server/app.js\" \"npm run dev --prefix client\"",
+    "test": "jest --testPathPattern=server"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^7.5.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
+    "express": "^4.17.3",
+    "jsonwebtoken": "^8.5.1"
+  },
+  "devDependencies": {
+    "concurrently": "^7.0.0",
+    "jest": "^27.5.1",
+    "supertest": "^6.2.2"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testPathPattern": "server/tests"
+  }
+}
