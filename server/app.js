@@ -9,6 +9,8 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
 
+app.use('/api/auth', require('./routes/auth'));
+
 app.get('/api/ping', (req, res) => {
   res.json({ ok: true });
 });
