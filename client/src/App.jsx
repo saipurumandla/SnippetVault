@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Vault from './pages/Vault';
 
 function PrivateRoute({ children }) {
   const { isAuthed } = useAuth();
@@ -15,7 +16,7 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/" element={<Navigate to="/vault" replace />} />
-      <Route path="/vault" element={<PrivateRoute><div>Vault coming soon</div></PrivateRoute>} />
+      <Route path="/vault" element={<PrivateRoute><Vault /></PrivateRoute>} />
     </Routes>
   );
 }
