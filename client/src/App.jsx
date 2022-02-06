@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Vault from './pages/Vault';
+import SnippetDetail from './pages/SnippetDetail';
 
 function PrivateRoute({ children }) {
   const { isAuthed } = useAuth();
@@ -17,6 +18,7 @@ function AppRoutes() {
       <Route path="/register" element={<Register />} />
       <Route path="/" element={<Navigate to="/vault" replace />} />
       <Route path="/vault" element={<PrivateRoute><Vault /></PrivateRoute>} />
+      <Route path="/snippet/:id" element={<PrivateRoute><SnippetDetail /></PrivateRoute>} />
     </Routes>
   );
 }
