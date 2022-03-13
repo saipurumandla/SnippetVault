@@ -2,17 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import SnippetCard from '../components/SnippetCard';
+import Sidebar from '../components/Sidebar';
 import styles from './Vault.module.css';
 
 export default function Vault() {
   const [snippets, setSnippets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [lang, setLang] = useState('');
   const navigate = useNavigate();
 
-  const load = async () => {
+  const load = async (language) => {
+    setLoading(true);
     try {
-      const data = await api.get('/snippets');
+      const qs = language ? `?language=${encodeURIComponent(language)}` : '';
+      const data = await api.get(`/snippets${qs}`);
       setSnippets(data);
     } catch (err) {
       setError(err.message);
@@ -21,7 +25,7 @@ export default function Vault() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(lang); }, [lang]);
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this snippet?')) return;
@@ -34,7 +38,9 @@ export default function Vault() {
   };
 
   return (
-    <div className={styles.page}>
+    <div className={styles.layout}>
+      <Sidebar selectedLang={lang} onLangChange={setLang} />
+      <div className={styles.page}>
       <div className={styles.toolbar}>
         <h2 className={styles.heading}>Vault</h2>
         <button className={styles.newBtn} onClick={() => navigate('/snippet/new')}>+ New Snippet</button>
@@ -51,6 +57,7 @@ export default function Vault() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

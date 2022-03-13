@@ -5,15 +5,24 @@ const auth = require('../middleware/authMiddleware');
 const router = express.Router();
 
 router.get('/', auth, (req, res) => {
+  const { language } = req.query;
+  const now = new Date().toISOString();
+  const params = [req.user.id, now];
+  let where = 'WHERE s.author_id = ? AND (s.expires_at IS NULL OR s.expires_at > ?)';
+
+  if (language) {
+    where += ' AND s.language = ?';
+    params.push(language);
+  }
+
   const snippets = db.prepare(`
     SELECT s.*, GROUP_CONCAT(st.tag) as tags
     FROM snippets s
     LEFT JOIN snippet_tags st ON st.snippet_id = s.id
-    WHERE s.author_id = ?
-      AND (s.expires_at IS NULL OR s.expires_at > ?)
+    ${where}
     GROUP BY s.id
     ORDER BY s.updated_at DESC
-  `).all(req.user.id, new Date().toISOString());
+  `).all(...params);
 
   res.json(snippets.map(s => ({
     ...s,
