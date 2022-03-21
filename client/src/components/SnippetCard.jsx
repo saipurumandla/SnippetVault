@@ -25,6 +25,11 @@ export default function SnippetCard({ snippet, onDelete }) {
         <p className={styles.desc}>{snippet.description}</p>
       )}
       <pre className={styles.preview}>{snippet.code.slice(0, 120)}{snippet.code.length > 120 ? '…' : ''}</pre>
+      {snippet.tags && snippet.tags.length > 0 && (
+        <div className={styles.tags}>
+          {snippet.tags.map(t => <span key={t} className={styles.tag}>{t}</span>)}
+        </div>
+      )}
       <div className={styles.footer} onClick={e => e.stopPropagation()}>
         <span className={styles.meta}>{new Date(snippet.updated_at).toLocaleDateString()}</span>
         <div className={styles.footerActions}>

@@ -66,6 +66,21 @@
   padding: 1px 6px;
 }
 
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.tag {
+  font-size: 11px;
+  color: var(--color-accent);
+  background: var(--color-select);
+  border-radius: 3px;
+  padding: 1px 6px;
+}
+
 .footer {
   display: flex;
   align-items: center;

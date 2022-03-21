@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 3001;
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/snippets', require('./routes/snippets'));
+app.use('/api/tags', require('./routes/tags'));
 
 app.get('/api/ping', (req, res) => {
   res.json({ ok: true });
