@@ -10,12 +10,16 @@ export default function Vault() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [lang, setLang] = useState('');
+  const [search, setSearch] = useState('');
   const navigate = useNavigate();
 
-  const load = async (language) => {
+  const load = async (language, q) => {
     setLoading(true);
+    const params = new URLSearchParams();
+    if (language) params.set('language', language);
+    if (q) params.set('q', q);
     try {
-      const qs = language ? `?language=${encodeURIComponent(language)}` : '';
+      const qs = params.toString() ? `?${params}` : '';
       const data = await api.get(`/snippets${qs}`);
       setSnippets(data);
     } catch (err) {
@@ -25,7 +29,7 @@ export default function Vault() {
     }
   };
 
-  useEffect(() => { load(lang); }, [lang]);
+  useEffect(() => { load(lang, search); }, [lang, search]);
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this snippet?')) return;
@@ -43,6 +47,12 @@ export default function Vault() {
       <div className={styles.page}>
       <div className={styles.toolbar}>
         <h2 className={styles.heading}>Vault</h2>
+        <input
+          className={styles.search}
+          placeholder="Search snippets…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
         <button className={styles.newBtn} onClick={() => navigate('/snippet/new')}>+ New Snippet</button>
       </div>
       {error && <p className={styles.error}>{error}</p>}

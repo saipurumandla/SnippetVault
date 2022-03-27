@@ -5,8 +5,29 @@ const auth = require('../middleware/authMiddleware');
 const router = express.Router();
 
 router.get('/', auth, (req, res) => {
-  const { language } = req.query;
+  const { language, q } = req.query;
   const now = new Date().toISOString();
+
+  if (q && q.trim()) {
+    const matchIds = db.prepare(`
+      SELECT rowid FROM snippets_fts WHERE snippets_fts MATCH ? ORDER BY rank
+    `).all(`${q.trim()}*`).map(r => r.rowid);
+
+    if (matchIds.length === 0) return res.json([]);
+
+    const placeholders = matchIds.map(() => '?').join(',');
+    const snippets = db.prepare(`
+      SELECT s.*, GROUP_CONCAT(st.tag) as tags
+      FROM snippets s
+      LEFT JOIN snippet_tags st ON st.snippet_id = s.id
+      WHERE s.id IN (${placeholders}) AND s.author_id = ?
+        AND (s.expires_at IS NULL OR s.expires_at > ?)
+      GROUP BY s.id
+    `).all(...matchIds, req.user.id, now);
+
+    return res.json(snippets.map(s => ({ ...s, tags: s.tags ? s.tags.split(',') : [] })));
+  }
+
   const params = [req.user.id, now];
   let where = 'WHERE s.author_id = ? AND (s.expires_at IS NULL OR s.expires_at > ?)';
 

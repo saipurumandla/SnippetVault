@@ -51,3 +51,21 @@ CREATE TABLE IF NOT EXISTS snippet_versions (
   code       TEXT NOT NULL,
   changed_at TEXT NOT NULL
 );
+
+CREATE VIRTUAL TABLE IF NOT EXISTS snippets_fts USING fts5(
+  title, description, code,
+  content='snippets', content_rowid='id'
+);
+
+CREATE TRIGGER IF NOT EXISTS snippets_fts_insert AFTER INSERT ON snippets BEGIN
+  INSERT INTO snippets_fts(rowid, title, description, code) VALUES (new.id, new.title, new.description, new.code);
+END;
+
+CREATE TRIGGER IF NOT EXISTS snippets_fts_update AFTER UPDATE ON snippets BEGIN
+  INSERT INTO snippets_fts(snippets_fts, rowid, title, description, code) VALUES ('delete', old.id, old.title, old.description, old.code);
+  INSERT INTO snippets_fts(rowid, title, description, code) VALUES (new.id, new.title, new.description, new.code);
+END;
+
+CREATE TRIGGER IF NOT EXISTS snippets_fts_delete AFTER DELETE ON snippets BEGIN
+  INSERT INTO snippets_fts(snippets_fts, rowid, title, description, code) VALUES ('delete', old.id, old.title, old.description, old.code);
+END;
