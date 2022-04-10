@@ -5,7 +5,7 @@ const auth = require('../middleware/authMiddleware');
 const router = express.Router();
 
 router.get('/', auth, (req, res) => {
-  const { language, q } = req.query;
+  const { language, q, project_id } = req.query;
   const now = new Date().toISOString();
 
   if (q && q.trim()) {
@@ -34,6 +34,11 @@ router.get('/', auth, (req, res) => {
   if (language) {
     where += ' AND s.language = ?';
     params.push(language);
+  }
+
+  if (project_id) {
+    where += ' AND s.project_id = ?';
+    params.push(project_id);
   }
 
   const snippets = db.prepare(`

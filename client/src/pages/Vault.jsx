@@ -11,13 +11,15 @@ export default function Vault() {
   const [error, setError] = useState('');
   const [lang, setLang] = useState('');
   const [search, setSearch] = useState('');
+  const [project, setProject] = useState(null);
   const navigate = useNavigate();
 
-  const load = async (language, q) => {
+  const load = async (language, q, projectId) => {
     setLoading(true);
     const params = new URLSearchParams();
     if (language) params.set('language', language);
     if (q) params.set('q', q);
+    if (projectId) params.set('project_id', projectId);
     try {
       const qs = params.toString() ? `?${params}` : '';
       const data = await api.get(`/snippets${qs}`);
@@ -29,7 +31,7 @@ export default function Vault() {
     }
   };
 
-  useEffect(() => { load(lang, search); }, [lang, search]);
+  useEffect(() => { load(lang, search, project); }, [lang, search, project]);
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this snippet?')) return;
@@ -43,7 +45,7 @@ export default function Vault() {
 
   return (
     <div className={styles.layout}>
-      <Sidebar selectedLang={lang} onLangChange={setLang} />
+      <Sidebar selectedLang={lang} onLangChange={setLang} selectedProject={project} onProjectChange={setProject} />
       <div className={styles.page}>
       <div className={styles.toolbar}>
         <h2 className={styles.heading}>Vault</h2>

@@ -1,9 +1,10 @@
 import React from 'react';
+import ProjectSwitcher from './ProjectSwitcher';
 import styles from './Sidebar.module.css';
 
 const LANGUAGES = ['javascript', 'typescript', 'python', 'bash', 'sql', 'json', 'yaml', 'html', 'css', 'go', 'rust', 'java', 'csharp', 'cpp', 'markdown', 'plaintext'];
 
-export default function Sidebar({ selectedLang, onLangChange }) {
+export default function Sidebar({ selectedLang, onLangChange, selectedProject, onProjectChange }) {
   return (
     <aside className={styles.sidebar}>
       <p className={styles.label}>Language</p>
@@ -22,6 +23,7 @@ export default function Sidebar({ selectedLang, onLangChange }) {
           {l}
         </button>
       ))}
+      <ProjectSwitcher selectedProject={selectedProject} onProjectChange={onProjectChange} />
     </aside>
   );
 }
