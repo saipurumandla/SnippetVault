@@ -16,6 +16,7 @@ export default function SnippetEditor() {
   const [description, setDescription] = useState('');
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('javascript');
+  const [visibility, setVisibility] = useState('private');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -27,6 +28,7 @@ export default function SnippetEditor() {
           setDescription(s.description || '');
           setCode(s.code);
           setLanguage(s.language);
+          setVisibility(s.visibility);
         })
         .catch(err => setError(err.message));
     }
@@ -40,7 +42,7 @@ export default function SnippetEditor() {
     setSaving(true);
     setError('');
     try {
-      const body = { title, description, code, language };
+      const body = { title, description, code, language, visibility };
       if (isNew) {
         const snippet = await api.post('/snippets', body);
         navigate(`/snippet/${snippet.id}`);
@@ -78,6 +80,11 @@ export default function SnippetEditor() {
       <div className={styles.controls}>
         <select className={styles.select} value={language} onChange={e => setLanguage(e.target.value)}>
           {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
+        </select>
+        <select className={styles.select} value={visibility} onChange={e => setVisibility(e.target.value)}>
+          <option value="private">Private</option>
+          <option value="project">Project</option>
+          <option value="shared">Shared</option>
         </select>
       </div>
       <div className={styles.editor}>

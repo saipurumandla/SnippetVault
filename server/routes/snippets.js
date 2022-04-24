@@ -28,8 +28,14 @@ router.get('/', auth, (req, res) => {
     return res.json(snippets.map(s => ({ ...s, tags: s.tags ? s.tags.split(',') : [] })));
   }
 
-  const params = [req.user.id, now];
-  let where = 'WHERE s.author_id = ? AND (s.expires_at IS NULL OR s.expires_at > ?)';
+  const params = [req.user.id, req.user.id, now];
+  let where = `WHERE (
+    s.author_id = ?
+    OR s.visibility = 'shared'
+    OR (s.visibility = 'project' AND s.project_id IN (
+      SELECT project_id FROM project_members WHERE user_id = ?
+    ))
+  ) AND (s.expires_at IS NULL OR s.expires_at > ?)`;
 
   if (language) {
     where += ' AND s.language = ?';
