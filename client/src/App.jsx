@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Header from './components/Header';
+import CommandPalette from './components/CommandPalette';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Vault from './pages/Vault';
@@ -19,6 +20,7 @@ function Layout({ children }) {
   return (
     <>
       {isAuthed && <Header />}
+      {isAuthed && <CommandPalette />}
       {children}
     </>
   );
