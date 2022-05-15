@@ -6,11 +6,15 @@ import styles from './CommandPalette.module.css';
 
 const ACTIONS = [
   { id: 'new-snippet', label: 'New Snippet', type: 'action', path: '/snippet/new' },
+  { id: 'new-project', label: 'New Project', type: 'action', path: '/projects/new' },
   { id: 'settings', label: 'Go to Settings', type: 'action', path: '/settings' },
   { id: 'toggle-theme', label: 'Toggle Theme', type: 'action' },
+  { id: 'export', label: 'Export Vault', type: 'action', path: '/settings?tab=export' },
+  { id: 'favourites', label: 'My Favourites', type: 'action', path: '/vault?filter=favourites' },
 ];
 
 function fuzzy(str, query) {
+  if (!query) return true;
   return str.toLowerCase().includes(query.toLowerCase());
 }
 
@@ -18,6 +22,8 @@ export default function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [snippets, setSnippets] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [tags, setTags] = useState([]);
   const [active, setActive] = useState(0);
   const inputRef = useRef(null);
   const navigate = useNavigate();
@@ -40,17 +46,29 @@ export default function CommandPalette() {
       setQuery('');
       setActive(0);
       api.get('/snippets').then(setSnippets).catch(() => {});
+      api.get('/projects').then(setProjects).catch(() => {});
+      api.get('/tags').then(setTags).catch(() => {});
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open]);
 
   const snippetItems = snippets
     .filter(s => fuzzy(s.title, query) || fuzzy(s.language, query))
-    .slice(0, 6)
-    .map(s => ({ id: `s-${s.id}`, label: s.title, type: 'snippet', secondary: s.language, path: `/snippet/${s.id}` }));
+    .slice(0, 5)
+    .map(s => ({ id: `s-${s.id}`, label: s.title, type: 'snippet', path: `/snippet/${s.id}` }));
 
-  const actionItems = ACTIONS.filter(a => !query || fuzzy(a.label, query));
-  const items = [...snippetItems, ...actionItems];
+  const projectItems = projects
+    .filter(p => fuzzy(p.name, query))
+    .slice(0, 3)
+    .map(p => ({ id: `p-${p.id}`, label: p.name, type: 'project', path: `/vault?project_id=${p.id}` }));
+
+  const tagItems = tags
+    .filter(t => fuzzy(t, query))
+    .slice(0, 3)
+    .map(t => ({ id: `t-${t}`, label: `#${t}`, type: 'tag', path: `/vault?tag=${encodeURIComponent(t)}` }));
+
+  const actionItems = ACTIONS.filter(a => fuzzy(a.label, query));
+  const items = [...snippetItems, ...projectItems, ...tagItems, ...actionItems];
 
   const handleSelect = (item) => {
     setOpen(false);
