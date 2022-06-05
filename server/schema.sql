@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS projects (
   name        TEXT NOT NULL,
   description TEXT,
   owner_id    INTEGER NOT NULL REFERENCES users(id),
+  enc_key     TEXT,
   created_at  TEXT NOT NULL
 );
 

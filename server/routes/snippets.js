@@ -1,6 +1,8 @@
 const express = require('express');
+const crypto = require('crypto');
 const db = require('../db');
 const auth = require('../middleware/authMiddleware');
+const { encryptAesGcm, generateProjectKey, wrapKey } = require('../crypto');
 
 const router = express.Router();
 
@@ -71,14 +73,28 @@ router.get('/:id', auth, (req, res) => {
 });
 
 router.post('/', auth, (req, res) => {
-  const { title, description, code, language, visibility = 'private', project_id } = req.body;
+  const { title, description, code, language, visibility = 'private', project_id, encryption_mode = 'standard', wrapped_key } = req.body;
   if (!title || !code || !language) return res.status(400).json({ error: 'title, code, and language are required' });
 
   const now = new Date().toISOString();
+
+  let storedCode = code;
+  let storedWrappedKey = null;
+
+  if (encryption_mode === 'standard') {
+    const snippetKey = crypto.randomBytes(32);
+    const projectKey = generateProjectKey();
+    storedCode = encryptAesGcm(code, snippetKey);
+    storedWrappedKey = wrapKey(snippetKey, projectKey);
+  } else if (encryption_mode === 'sensitive') {
+    storedCode = code;
+    storedWrappedKey = wrapped_key || null;
+  }
+
   const result = db.prepare(`
-    INSERT INTO snippets (title, description, code, language, visibility, project_id, author_id, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(title, description || null, code, language, visibility, project_id || null, req.user.id, now, now);
+    INSERT INTO snippets (title, description, code, language, visibility, encryption_mode, wrapped_key, project_id, author_id, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(title, description || null, storedCode, language, visibility, encryption_mode, storedWrappedKey, project_id || null, req.user.id, now, now);
 
   const snippet = db.prepare('SELECT * FROM snippets WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json({ ...snippet, tags: [] });
