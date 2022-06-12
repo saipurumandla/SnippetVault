@@ -2,7 +2,8 @@ const express = require('express');
 const crypto = require('crypto');
 const db = require('../db');
 const auth = require('../middleware/authMiddleware');
-const { encryptAesGcm, generateProjectKey, wrapKey } = require('../crypto');
+const { encryptAesGcm, wrapKey } = require('../crypto');
+const { getOrCreateProjectKey, getPersonalKey } = require('../keystore');
 
 const router = express.Router();
 
@@ -83,7 +84,9 @@ router.post('/', auth, (req, res) => {
 
   if (encryption_mode === 'standard') {
     const snippetKey = crypto.randomBytes(32);
-    const projectKey = generateProjectKey();
+    const projectKey = project_id
+      ? getOrCreateProjectKey(project_id)
+      : getPersonalKey(req.user.id);
     storedCode = encryptAesGcm(code, snippetKey);
     storedWrappedKey = wrapKey(snippetKey, projectKey);
   } else if (encryption_mode === 'sensitive') {
