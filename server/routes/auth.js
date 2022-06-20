@@ -35,4 +35,13 @@ router.post('/login', (req, res) => {
   res.json({ token });
 });
 
+const authMiddleware = require('../middleware/authMiddleware');
+
+router.post('/enc-pubkey', authMiddleware, (req, res) => {
+  const { encPublicKey } = req.body;
+  if (!encPublicKey) return res.status(400).json({ error: 'encPublicKey required' });
+  db.prepare('UPDATE users SET enc_public_key = ? WHERE id = ?').run(encPublicKey, req.user.id);
+  res.json({ ok: true });
+});
+
 module.exports = router;
