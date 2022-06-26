@@ -24,6 +24,10 @@
   color: var(--color-text);
 }
 
+.lock {
+  font-size: 12px;
+}
+
 .lang {
   font-size: 11px;
   color: var(--color-muted);

@@ -18,7 +18,10 @@ export default function SnippetCard({ snippet, onDelete }) {
   return (
     <div className={styles.card} onClick={() => navigate(`/snippet/${snippet.id}`)}>
       <div className={styles.header}>
-        <span className={styles.title}>{snippet.title}</span>
+        <span className={styles.title}>
+          {snippet.encryption_mode === 'sensitive' && <span className={styles.lock}>🔒 </span>}
+          {snippet.title}
+        </span>
         <span className={styles.lang}>{snippet.language}</span>
       </div>
       {snippet.description && (
