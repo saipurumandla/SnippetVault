@@ -13,6 +13,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/snippets', require('./routes/snippets'));
 app.use('/api/tags', require('./routes/tags'));
 app.use('/api/projects', require('./routes/projects'));
+app.use('/api/share', require('./routes/share'));
 
 app.get('/api/ping', (req, res) => {
   res.json({ ok: true });
