@@ -14,6 +14,7 @@ app.use('/api/snippets', require('./routes/snippets'));
 app.use('/api/tags', require('./routes/tags'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/share', require('./routes/share'));
+app.use('/api/expired', require('./routes/expired'));
 
 app.get('/api/ping', (req, res) => {
   res.json({ ok: true });
