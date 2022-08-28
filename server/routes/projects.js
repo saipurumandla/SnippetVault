@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const auth = require('../middleware/authMiddleware');
+const { projectSchema, validate } = require('../validation');
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ router.get('/', auth, (req, res) => {
   res.json(projects);
 });
 
-router.post('/', auth, (req, res) => {
+router.post('/', auth, validate(projectSchema), (req, res) => {
   const { name, description } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'name is required' });
 

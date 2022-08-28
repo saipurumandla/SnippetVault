@@ -4,6 +4,7 @@ const db = require('../db');
 const auth = require('../middleware/authMiddleware');
 const { encryptAesGcm, wrapKey } = require('../crypto');
 const { getOrCreateProjectKey, getPersonalKey } = require('../keystore');
+const { snippetSchema, validate } = require('../validation');
 
 const router = express.Router();
 
@@ -73,7 +74,7 @@ router.get('/:id', auth, (req, res) => {
   res.json({ ...snippet, tags });
 });
 
-router.post('/', auth, (req, res) => {
+router.post('/', auth, validate(snippetSchema), (req, res) => {
   const { title, description, code, language, visibility = 'private', project_id, encryption_mode = 'standard', wrapped_key } = req.body;
   if (!title || !code || !language) return res.status(400).json({ error: 'title, code, and language are required' });
 

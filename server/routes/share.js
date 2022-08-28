@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const auth = require('../middleware/authMiddleware');
+const { shareSchema, validate } = require('../validation');
 
 const router = express.Router();
 
@@ -18,7 +19,7 @@ router.get('/recipients/:projectId', auth, (req, res) => {
   res.json(recipients);
 });
 
-router.post('/:snippetId', auth, (req, res) => {
+router.post('/:snippetId', auth, validate(shareSchema), (req, res) => {
   const snippet = db.prepare('SELECT * FROM snippets WHERE id = ? AND author_id = ?').get(req.params.snippetId, req.user.id);
   if (!snippet) return res.status(404).json({ error: 'Not found' });
   if (snippet.encryption_mode !== 'sensitive') return res.status(400).json({ error: 'Only sensitive snippets can be shared this way' });
