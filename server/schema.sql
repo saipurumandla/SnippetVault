@@ -53,6 +53,15 @@ CREATE TABLE IF NOT EXISTS snippet_versions (
   changed_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS security_events (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    INTEGER REFERENCES users(id),
+  event_type TEXT NOT NULL,
+  snippet_id INTEGER,
+  meta       TEXT,
+  created_at TEXT NOT NULL
+);
+
 CREATE VIRTUAL TABLE IF NOT EXISTS snippets_fts USING fts5(
   title, description, code,
   content='snippets', content_rowid='id'

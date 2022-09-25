@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../db');
 const auth = require('../middleware/authMiddleware');
 const { shareSchema, validate } = require('../validation');
+const { logEvent } = require('../securityLog');
 
 const router = express.Router();
 
@@ -40,6 +41,7 @@ router.post('/:snippetId', auth, validate(shareSchema), (req, res) => {
     snippet.id
   );
 
+  logEvent(req.user.id, 'share', snippet.id, { recipientCount: recipients.length });
   res.json({ ok: true });
 });
 
