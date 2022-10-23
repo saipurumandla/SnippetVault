@@ -35,6 +35,7 @@ app.use('/api/tags', require('./routes/tags'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/share', require('./routes/share'));  // limiter mounted above
 app.use('/api/expired', require('./routes/expired'));
+app.use('/api/backup', require('./routes/backup'));
 
 app.use('/', require('./routes/health'));
 app.get('/api/ping', (req, res) => {
