@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache: 'npm'
+
+      - name: Install server deps
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+        env:
+          JWT_SECRET: ci-test-secret
+          MASTER_KEY: 0000000000000000000000000000000000000000000000000000000000000000
+          DB_PATH: ':memory:'
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Install client deps
+        run: npm ci --prefix client
+
+      - name: Build client
+        run: npm run build --prefix client
