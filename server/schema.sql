@@ -62,6 +62,23 @@ CREATE TABLE IF NOT EXISTS security_events (
   created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS rag_chunks (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  snippet_id  INTEGER NOT NULL REFERENCES snippets(id) ON DELETE CASCADE,
+  project_id  INTEGER REFERENCES projects(id),
+  chunk_index INTEGER NOT NULL,
+  text        TEXT NOT NULL,
+  version_id  INTEGER REFERENCES snippet_versions(id),
+  indexed_at  TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS rag_embeddings (
+  chunk_id    INTEGER PRIMARY KEY REFERENCES rag_chunks(id) ON DELETE CASCADE,
+  embedding   BLOB NOT NULL,
+  model       TEXT NOT NULL,
+  dims        INTEGER NOT NULL
+);
+
 CREATE VIRTUAL TABLE IF NOT EXISTS snippets_fts USING fts5(
   title, description, code,
   content='snippets', content_rowid='id'
