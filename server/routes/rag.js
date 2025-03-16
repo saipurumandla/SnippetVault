@@ -2,12 +2,18 @@ const express = require('express');
 const auth = require('../middleware/authMiddleware');
 const { retrieve } = require('../rag/retriever');
 const { generateAnswer } = require('../rag/answerer');
+const { checkPromptInjection, redactSecrets } = require('../rag/guardrails');
 
 const router = express.Router();
 
 router.post('/ask', auth, async (req, res) => {
   const { question, projectId } = req.body;
   if (!question || !question.trim()) return res.status(400).json({ error: 'question required' });
+
+  const injectionCheck = checkPromptInjection(question);
+  if (injectionCheck.blocked) {
+    return res.status(400).json({ error: injectionCheck.reason });
+  }
 
   try {
     const { chunks, lowConfidence } = await retrieve(question, req.user.id, projectId || null);
@@ -21,7 +27,8 @@ router.post('/ask', auth, async (req, res) => {
     }
 
     const { answer, citations } = await generateAnswer(question, chunks);
-    res.json({ answer, citations, lowConfidence: false });
+    const safeAnswer = redactSecrets(answer);
+    res.json({ answer: safeAnswer, citations, lowConfidence: false });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'RAG query failed' });
