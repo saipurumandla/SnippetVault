@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import SnippetCard from '../components/SnippetCard';
 import Sidebar from '../components/Sidebar';
+import RagPanel from '../components/RagPanel';
 import styles from './Vault.module.css';
 
 export default function Vault() {
@@ -57,6 +58,7 @@ export default function Vault() {
         />
         <button className={styles.newBtn} onClick={() => navigate('/snippet/new')}>+ New Snippet</button>
       </div>
+      <RagPanel />
       {error && <p className={styles.error}>{error}</p>}
       {loading ? (
         <p className={styles.muted}>Loading…</p>
