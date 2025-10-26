@@ -3,6 +3,7 @@ const db = require('../db');
 const auth = require('../middleware/authMiddleware');
 const { health, generate, APPROVED_MODELS } = require('../ai/ollamaClient');
 const { explainPrompt, summarizePrompt, refactorPrompt } = require('../ai/prompts');
+const { redactSecrets, containsInjection } = require('../ai/safetyFilters');
 const { retrieve } = require('../rag/retriever');
 
 const router = express.Router();
@@ -21,7 +22,8 @@ router.post('/explain/:snippetId', auth, async (req, res) => {
   try {
     const { chunks } = await retrieve(snippet.title, req.user.id, snippet.project_id);
     const prompt = explainPrompt(snippet, chunks);
-    const response = await generate({ model, prompt, temperature: 0.2 });
+    const raw = await generate({ model, prompt, temperature: 0.2 });
+    const response = redactSecrets(raw);
     res.json({ response, citations: chunks.map(c => ({ snippetId: c.snippet_id, title: c.title })) });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -37,7 +39,8 @@ router.post('/summarize/:snippetId', auth, async (req, res) => {
   try {
     const { chunks } = await retrieve(snippet.title, req.user.id, snippet.project_id);
     const prompt = summarizePrompt(snippet, chunks);
-    const response = await generate({ model, prompt, temperature: 0.2 });
+    const raw = await generate({ model, prompt, temperature: 0.2 });
+    const response = redactSecrets(raw);
     res.json({ response, citations: chunks.map(c => ({ snippetId: c.snippet_id, title: c.title })) });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -52,7 +55,9 @@ router.post('/refactor/:snippetId', auth, async (req, res) => {
 
   try {
     const prompt = refactorPrompt(snippet);
-    const response = await generate({ model, prompt, temperature: 0.3 });
+    if (containsInjection(snippet.code)) return res.status(400).json({ error: 'Snippet content blocked by safety filter' });
+    const raw = await generate({ model, prompt, temperature: 0.3 });
+    const response = redactSecrets(raw);
     res.json({ response, draft: true, citations: [] });
   } catch (err) {
     res.status(500).json({ error: err.message });
