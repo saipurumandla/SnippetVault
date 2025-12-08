@@ -14,7 +14,7 @@ router.get('/models', auth, async (req, res) => {
 });
 
 router.post('/explain/:snippetId', auth, async (req, res) => {
-  const { model = 'qwen2.5-coder' } = req.body;
+  const { model = process.env.OLLAMA_DEFAULT_MODEL || 'qwen3-coder:30b' } = req.body;
   const snippet = db.prepare('SELECT * FROM snippets WHERE id = ? AND author_id = ?').get(req.params.snippetId, req.user.id);
   if (!snippet) return res.status(404).json({ error: 'Not found' });
   if (snippet.encryption_mode === 'sensitive') return res.status(400).json({ error: 'Cannot use AI on sensitive snippets' });
@@ -31,7 +31,7 @@ router.post('/explain/:snippetId', auth, async (req, res) => {
 });
 
 router.post('/summarize/:snippetId', auth, async (req, res) => {
-  const { model = 'qwen2.5-coder' } = req.body;
+  const { model = process.env.OLLAMA_DEFAULT_MODEL || 'qwen3-coder:30b' } = req.body;
   const snippet = db.prepare('SELECT * FROM snippets WHERE id = ? AND author_id = ?').get(req.params.snippetId, req.user.id);
   if (!snippet) return res.status(404).json({ error: 'Not found' });
   if (snippet.encryption_mode === 'sensitive') return res.status(400).json({ error: 'Cannot use AI on sensitive snippets' });
@@ -48,7 +48,7 @@ router.post('/summarize/:snippetId', auth, async (req, res) => {
 });
 
 router.post('/refactor/:snippetId', auth, async (req, res) => {
-  const { model = 'qwen2.5-coder' } = req.body;
+  const { model = process.env.OLLAMA_DEFAULT_MODEL || 'qwen3-coder:30b' } = req.body;
   const snippet = db.prepare('SELECT * FROM snippets WHERE id = ? AND author_id = ?').get(req.params.snippetId, req.user.id);
   if (!snippet) return res.status(404).json({ error: 'Not found' });
   if (snippet.encryption_mode === 'sensitive') return res.status(400).json({ error: 'Cannot use AI on sensitive snippets' });

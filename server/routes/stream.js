@@ -16,7 +16,7 @@ const ACTION_PROMPTS = {
 
 router.get('/:action/:snippetId', auth, async (req, res) => {
   const { action, snippetId } = req.params;
-  const { model = 'qwen2.5-coder' } = req.query;
+  const { model = process.env.OLLAMA_DEFAULT_MODEL || 'qwen3-coder:30b' } = req.query;
 
   if (!ACTION_PROMPTS[action]) return res.status(400).json({ error: 'Unknown action' });
 

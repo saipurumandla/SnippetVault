@@ -3,7 +3,12 @@ const http = require('http');
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'localhost';
 const OLLAMA_PORT = parseInt(process.env.OLLAMA_PORT || '11434', 10);
 
-const APPROVED_MODELS = ['qwen2.5-coder', 'llama3.1', 'mistral', 'qwen2.5-coder:7b', 'llama3.1:8b'];
+const APPROVED_MODELS = [
+  'qwen3-coder:30b',
+  'qwen2.5-coder', 'qwen2.5-coder:7b',
+  'llama3.1', 'llama3.1:8b',
+  'mistral',
+];
 const MAX_TEMPERATURE = 0.7;
 const SAFE_TEMPERATURE = 0.2;
 
