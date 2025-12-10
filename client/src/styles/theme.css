@@ -1,29 +1,47 @@
-:root[data-theme="dark"] {
-  --color-bg:      #1e1e1e;
-  --color-surface: #252526;
-  --color-card:    #2d2d2d;
-  --color-border:  #404040;
-  --color-text:    #d4d4d4;
-  --color-muted:   #858585;
-  --color-accent:  #0078d4;
-  --color-accent-hover: #1a8ad4;
-  --color-success: #4ec9b0;
-  --color-warning: #dcdcaa;
-  --color-error:   #f44747;
-  --color-select:  #264f78;
-}
+:root {
+  --bg-base:          #050b18;
+  --bg-layer:         #0a1628;
+  --bg-glass:         rgba(15, 23, 42, 0.7);
+  --bg-glass-hover:   rgba(30, 41, 59, 0.8);
+  --bg-input:         rgba(15, 23, 42, 0.9);
+  --border:           rgba(99, 102, 241, 0.18);
+  --border-subtle:    rgba(255, 255, 255, 0.07);
+  --blur:             blur(16px);
 
-:root[data-theme="light"] {
-  --color-bg:      #ffffff;
-  --color-surface: #f3f3f3;
-  --color-card:    #fafafa;
-  --color-border:  #e0e0e0;
-  --color-text:    #333333;
-  --color-muted:   #717171;
-  --color-accent:  #0066b8;
-  --color-accent-hover: #005ba1;
-  --color-success: #008000;
-  --color-warning: #795e26;
-  --color-error:   #a1260d;
-  --color-select:  #add6ff;
+  --text-primary:     #f1f5f9;
+  --text-secondary:   #94a3b8;
+  --text-muted:       #475569;
+
+  --indigo:           #6366f1;
+  --violet:           #8b5cf6;
+  --teal:             #14b8a6;
+  --sky:              #0ea5e9;
+  --emerald:          #10b981;
+  --amber:            #f59e0b;
+  --rose:             #f43f5e;
+  --orange:           #f97316;
+
+  --grad-primary:     linear-gradient(135deg, #6366f1, #8b5cf6);
+  --grad-teal:        linear-gradient(135deg, #14b8a6, #0ea5e9);
+  --grad-danger:      linear-gradient(135deg, #f43f5e, #ef4444);
+  --grad-amber:       linear-gradient(135deg, #f59e0b, #f97316);
+  --grad-emerald:     linear-gradient(135deg, #10b981, #14b8a6);
+
+  --shadow-sm:        0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md:        0 4px 20px rgba(0, 0, 0, 0.5);
+  --shadow-lg:        0 8px 40px rgba(0, 0, 0, 0.6);
+  --shadow-glow:      0 0 20px rgba(99, 102, 241, 0.25);
+
+  --radius-sm:        6px;
+  --radius-md:        10px;
+  --radius-lg:        16px;
+
+  --font-ui:          'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-code:        'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+
+  --sidebar-w:        220px;
+  --header-h:         56px;
+
+  --encrypt-standard: var(--teal);
+  --encrypt-sensitive: var(--violet);
 }
