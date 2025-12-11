@@ -1,0 +1,58 @@
+.createForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  background: var(--bg-glass);
+  backdrop-filter: var(--blur);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 24px;
+  max-width: 480px;
+}
+
+.formTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.card { padding: 18px; }
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.cardName {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cardDesc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.cardMeta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.memberForm {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
