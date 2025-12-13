@@ -1,76 +1,158 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
+import { useToast } from '../context/ToastContext';
 import SnippetCard from '../components/SnippetCard';
-import Sidebar from '../components/Sidebar';
+import Header from '../components/Header';
 import RagPanel from '../components/RagPanel';
 import styles from './Vault.module.css';
 
+const LANGUAGES = ['javascript', 'typescript', 'python', 'bash', 'sql', 'json', 'yaml', 'html', 'css', 'go', 'rust', 'java', 'csharp', 'cpp', 'markdown', 'plaintext'];
+
 export default function Vault() {
   const [snippets, setSnippets] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [tags, setTags] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [lang, setLang] = useState('');
   const [search, setSearch] = useState('');
-  const [project, setProject] = useState(null);
+  const [selectedLang, setSelectedLang] = useState('');
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedTag, setSelectedTag] = useState('');
+  const [showRag, setShowRag] = useState(false);
+  const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  const load = async (language, q, projectId) => {
+  const load = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
-    if (language) params.set('language', language);
-    if (q) params.set('q', q);
-    if (projectId) params.set('project_id', projectId);
+    if (search) params.set('q', search);
+    if (selectedLang) params.set('language', selectedLang);
+    if (selectedProject) params.set('project_id', selectedProject);
     try {
       const qs = params.toString() ? `?${params}` : '';
-      const data = await api.get(`/snippets${qs}`);
-      setSnippets(data);
+      const [snips, projs, tagList] = await Promise.all([
+        api.get(`/snippets${qs}`),
+        api.get('/projects'),
+        api.get('/tags'),
+      ]);
+      let filtered = snips;
+      if (selectedTag) filtered = filtered.filter(s => s.tags?.includes(selectedTag));
+      setSnippets(filtered);
+      setProjects(projs);
+      setTags(tagList);
     } catch (err) {
-      setError(err.message);
+      toast(err.message, 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, selectedLang, selectedProject, selectedTag]);
 
-  useEffect(() => { load(lang, search, project); }, [lang, search, project]);
+  useEffect(() => { load(); }, [load]);
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this snippet?')) return;
     try {
       await api.del(`/snippets/${id}`);
       setSnippets(prev => prev.filter(s => s.id !== id));
-    } catch (err) {
-      setError(err.message);
-    }
+      toast('Snippet deleted', 'success');
+    } catch (err) { toast(err.message, 'error'); }
   };
 
   return (
-    <div className={styles.layout}>
-      <Sidebar selectedLang={lang} onLangChange={setLang} selectedProject={project} onProjectChange={setProject} />
-      <div className={styles.page}>
-      <div className={styles.toolbar}>
-        <h2 className={styles.heading}>Vault</h2>
-        <input
-          className={styles.search}
-          placeholder="Search snippets…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-        <button className={styles.newBtn} onClick={() => navigate('/snippet/new')}>+ New Snippet</button>
-      </div>
-      <RagPanel />
-      {error && <p className={styles.error}>{error}</p>}
-      {loading ? (
-        <p className={styles.muted}>Loading…</p>
-      ) : snippets.length === 0 ? (
-        <p className={styles.muted}>No snippets yet. Create one to get started.</p>
-      ) : (
-        <div className={styles.grid}>
-          {snippets.map(s => (
-            <SnippetCard key={s.id} snippet={s} onDelete={handleDelete} />
+    <div className={styles.shell}>
+      <aside className={styles.sidebar}>
+        <div className={styles.sideSection}>
+          <p className={styles.sideLabel}>Language</p>
+          <button className={`${styles.sideItem} ${!selectedLang ? styles.sideActive : ''}`} onClick={() => setSelectedLang('')}>All</button>
+          {LANGUAGES.map(l => (
+            <button key={l} className={`${styles.sideItem} ${selectedLang === l ? styles.sideActive : ''}`} onClick={() => setSelectedLang(l)} style={{ '--lang-dot': l }}>
+              {l}
+            </button>
           ))}
         </div>
-      )}
+
+        {projects.length > 0 && (
+          <div className={styles.sideSection}>
+            <p className={styles.sideLabel}>Projects</p>
+            <button className={`${styles.sideItem} ${!selectedProject ? styles.sideActive : ''}`} onClick={() => setSelectedProject(null)}>All projects</button>
+            {projects.map(p => (
+              <button key={p.id} className={`${styles.sideItem} ${selectedProject === p.id ? styles.sideActive : ''}`} onClick={() => setSelectedProject(p.id)}>
+                {p.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {tags.length > 0 && (
+          <div className={styles.sideSection}>
+            <p className={styles.sideLabel}>Tags</p>
+            <button className={`${styles.sideItem} ${!selectedTag ? styles.sideActive : ''}`} onClick={() => setSelectedTag('')}>All tags</button>
+            {tags.map(t => (
+              <button key={t} className={`${styles.sideItem} ${selectedTag === t ? styles.sideActive : ''}`} onClick={() => setSelectedTag(t)}>
+                #{t}
+              </button>
+            ))}
+          </div>
+        )}
+      </aside>
+
+      <div className={styles.main}>
+        <Header onSearch={setSearch} searchValue={search} />
+
+        <div className={styles.content}>
+          <div className={styles.toolbar}>
+            <div className={styles.counts}>
+              {!loading && (
+                <span className={styles.count}>{snippets.length} snippet{snippets.length !== 1 ? 's' : ''}</span>
+              )}
+              {(selectedLang || selectedProject || selectedTag || search) && (
+                <button className={styles.clearFilters} onClick={() => { setSelectedLang(''); setSelectedProject(null); setSelectedTag(''); setSearch(''); }}>
+                  Clear filters
+                </button>
+              )}
+            </div>
+            <button
+              className={`${styles.ragToggle} ${showRag ? styles.ragToggleActive : ''}`}
+              onClick={() => setShowRag(s => !s)}
+              title="Ask AI about your snippets"
+            >
+              ✦ Ask AI
+            </button>
+          </div>
+
+          {showRag && (
+            <div className={styles.ragWrap}>
+              <RagPanel />
+            </div>
+          )}
+
+          {loading ? (
+            <div className={styles.loadingGrid}>
+              {[...Array(6)].map((_, i) => <div key={i} className={styles.skeleton} />)}
+            </div>
+          ) : snippets.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state-icon">⬡</div>
+              <p className="empty-state-text">
+                {search || selectedLang || selectedProject || selectedTag
+                  ? 'No snippets match your filters.'
+                  : 'Your vault is empty.\nClick "+ New Snippet" to get started.'}
+              </p>
+              {!search && !selectedLang && !selectedProject && !selectedTag && (
+                <button className="btn-primary" style={{ marginTop: 16 }} onClick={() => navigate('/snippet/new')}>
+                  + New Snippet
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className={styles.grid}>
+              {snippets.map(s => (
+                <SnippetCard key={s.id} snippet={s} onDelete={handleDelete} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
