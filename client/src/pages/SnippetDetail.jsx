@@ -3,57 +3,65 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 import { api } from '../lib/api';
 import { decryptFromSender } from '../lib/crypto';
+import { useToast } from '../context/ToastContext';
+import { useTheme } from '../context/ThemeContext';
 import PassphrasePrompt from '../components/PassphrasePrompt';
+import ShareDialog from '../components/ShareDialog';
+import StreamResponse from '../components/StreamResponse';
+import Header from '../components/Header';
 import styles from './SnippetDetail.module.css';
 
 const UNLOCK_TTL = 15 * 60 * 1000;
+const CLIPBOARD_CLEAR = 45;
 
 export default function SnippetDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const { toast } = useToast();
+
   const [snippet, setSnippet] = useState(null);
-  const [error, setError] = useState('');
   const [decryptedCode, setDecryptedCode] = useState(null);
   const [showPassphrase, setShowPassphrase] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [aiAction, setAiAction] = useState(null);
+  const [ollamaAvailable, setOllamaAvailable] = useState(false);
+  const [ollamaModel, setOllamaModel] = useState('qwen3-coder:30b');
+  const [clipTimer, setClipTimer] = useState(0);
+  const [copied, setCopied] = useState(false);
   const unlockTimer = useRef(null);
-  const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+  const clipInterval = useRef(null);
 
   useEffect(() => {
     api.get(`/snippets/${id}`)
       .then(s => {
         setSnippet(s);
         if (s.encryption_mode === 'sensitive') {
-          const sessionKey = sessionStorage.getItem(`unlockKey-${s.id}`);
-          if (sessionKey) {
-            performDecrypt(s, sessionKey);
-          } else {
-            setShowPassphrase(true);
-          }
+          const key = sessionStorage.getItem(`unlockKey-${s.id}`);
+          if (key) performDecrypt(s, key);
+          else setShowPassphrase(true);
         }
       })
-      .catch(err => setError(err.message));
-    return () => clearTimeout(unlockTimer.current);
+      .catch(err => toast(err.message, 'error'));
+
+    api.get('/assistant/models').then(d => {
+      setOllamaAvailable(d.available);
+      if (d.models?.length) setOllamaModel(d.models[0]);
+    }).catch(() => {});
+
+    return () => { clearTimeout(unlockTimer.current); clearInterval(clipInterval.current); };
   }, [id]);
 
   const performDecrypt = async (s, privateKey) => {
     try {
       const payload = s.wrapped_key ? JSON.parse(s.wrapped_key) : {};
       const senderPub = localStorage.getItem('encPublicKey');
-      const plain = await decryptFromSender(
-        { ciphertext: s.code, nonce: payload.nonce },
-        senderPub,
-        privateKey
-      );
+      const plain = await decryptFromSender({ ciphertext: s.code, nonce: payload.nonce }, senderPub, privateKey);
       setDecryptedCode(plain);
       sessionStorage.setItem(`unlockKey-${s.id}`, privateKey);
       clearTimeout(unlockTimer.current);
-      unlockTimer.current = setTimeout(() => {
-        setDecryptedCode(null);
-        sessionStorage.removeItem(`unlockKey-${s.id}`);
-      }, UNLOCK_TTL);
-    } catch {
-      setError('Failed to decrypt. Wrong key or corrupted data.');
-    }
+      unlockTimer.current = setTimeout(() => { setDecryptedCode(null); sessionStorage.removeItem(`unlockKey-${s.id}`); }, UNLOCK_TTL);
+    } catch { toast('Decryption failed — wrong key or corrupted data', 'error'); }
   };
 
   const handleUnlock = async (privateKey) => {
@@ -61,49 +69,208 @@ export default function SnippetDetail() {
     if (snippet) await performDecrypt(snippet, privateKey);
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Delete this snippet?')) return;
-    try {
-      await api.del(`/snippets/${id}`);
-      navigate('/vault');
-    } catch (err) {
-      setError(err.message);
+  const handleCopy = async () => {
+    const code = displayCode;
+    if (!code || code.startsWith('••')) { toast('Unlock snippet first', 'warning'); return; }
+
+    if (isSensitive) {
+      if (!confirm('Copy decrypted sensitive content? It will be cleared from clipboard in 45 seconds.')) return;
+    }
+
+    await navigator.clipboard.writeText(code);
+    api.post(`/snippets/${id}/copy`, {}).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast('Copied', 'success');
+
+    if (isSensitive) {
+      let secs = CLIPBOARD_CLEAR;
+      setClipTimer(secs);
+      clearInterval(clipInterval.current);
+      clipInterval.current = setInterval(() => {
+        secs -= 1;
+        setClipTimer(secs);
+        if (secs <= 0) {
+          clearInterval(clipInterval.current);
+          setClipTimer(0);
+          navigator.clipboard.writeText('').catch(() => {});
+          toast('Clipboard cleared', 'info');
+        }
+      }, 1000);
     }
   };
 
-  if (error) return <div className={styles.page}><p className={styles.error}>{error}</p></div>;
-  if (!snippet) return <div className={styles.page}><p className={styles.muted}>Loading…</p></div>;
+  const handleDelete = async () => {
+    if (!confirm('Delete this snippet permanently?')) return;
+    try {
+      await api.del(`/snippets/${id}`);
+      toast('Snippet deleted', 'success');
+      navigate('/vault');
+    } catch (err) { toast(err.message, 'error'); }
+  };
 
-  const displayCode = snippet.encryption_mode === 'sensitive'
-    ? (decryptedCode ?? '[locked — unlock to view]')
-    : snippet.code;
+  if (!snippet) return (
+    <div>
+      <Header />
+      <div className={styles.loading}>{showPassphrase ? '' : 'Loading…'}</div>
+      {showPassphrase && <PassphrasePrompt onUnlock={handleUnlock} onCancel={() => navigate('/vault')} />}
+    </div>
+  );
+
+  const isSensitive = snippet.encryption_mode === 'sensitive';
+  const isLocked = isSensitive && !decryptedCode;
+  const displayCode = isSensitive ? (decryptedCode ?? '••••••••••••••••••\n(unlock to view)') : snippet.code;
+  const tags = Array.isArray(snippet.tags) ? snippet.tags.filter(Boolean) : [];
 
   return (
-    <div className={styles.page}>
-      {showPassphrase && (
-        <PassphrasePrompt onUnlock={handleUnlock} onCancel={() => { setShowPassphrase(false); navigate('/vault'); }} />
-      )}
-      <div className={styles.header}>
-        <button className={styles.back} onClick={() => navigate('/vault')}>← Back</button>
-        <div className={styles.actions}>
-          <button className={styles.editBtn} onClick={() => navigate(`/snippet/${id}/edit`)}>Edit</button>
-          <button className={styles.delBtn} onClick={handleDelete}>Delete</button>
-        </div>
-      </div>
-      <h1 className={styles.title}>{snippet.title}</h1>
-      {snippet.description && <p className={styles.desc}>{snippet.description}</p>}
-      <div className={styles.meta}>
-        <span className={styles.lang}>{snippet.language}</span>
-        <span className={styles.date}>{new Date(snippet.updated_at).toLocaleDateString()}</span>
-      </div>
-      <div className={styles.editor}>
-        <Editor
-          height="400px"
-          language={snippet.language}
-          value={displayCode}
-          theme={theme === 'dark' ? 'vs-dark' : 'light'}
-          options={{ readOnly: true, minimap: { enabled: false }, scrollBeyondLastLine: false, fontSize: 13 }}
+    <div>
+      <Header />
+      {showPassphrase && <PassphrasePrompt onUnlock={handleUnlock} onCancel={() => { setShowPassphrase(false); navigate('/vault'); }} />}
+      {showShare && snippet && (
+        <ShareDialog
+          snippet={{ ...snippet, code: decryptedCode || snippet.code }}
+          projectId={snippet.project_id}
+          senderPrivateKey={sessionStorage.getItem(`unlockKey-${snippet.id}`)}
+          onClose={ok => { setShowShare(false); if (ok) toast('Shared successfully', 'success'); }}
         />
+      )}
+
+      <div className={styles.page}>
+        <div className={styles.topBar}>
+          <button className="btn-ghost" onClick={() => navigate('/vault')}>← Vault</button>
+          <div className={styles.actions}>
+            {clipTimer > 0 && (
+              <span className={styles.clipTimer}>🕐 Clipboard clears in {clipTimer}s</span>
+            )}
+            {isSensitive && isLocked && (
+              <button className="btn-ghost" onClick={() => setShowPassphrase(true)}>🔓 Unlock</button>
+            )}
+            <button className={`btn-ghost ${copied ? styles.copiedBtn : ''}`} onClick={handleCopy}>
+              {copied ? '✓ Copied' : 'Copy'}
+            </button>
+            {isSensitive && !isLocked && (
+              <button className="btn-ghost" onClick={() => setShowShare(true)}>Share</button>
+            )}
+            <button className="btn-primary" onClick={() => navigate(`/snippet/${id}/edit`)}>Edit</button>
+            <button className="btn-danger" onClick={handleDelete}>Delete</button>
+          </div>
+        </div>
+
+        <div className={styles.layout}>
+          <main className={styles.main}>
+            <div className={styles.metaRow}>
+              <h1 className={styles.title}>
+                {isSensitive && <span className={styles.lockIcon}>🔒</span>}
+                {snippet.title}
+              </h1>
+              <div className={styles.badges}>
+                <span className={`badge ${isSensitive ? 'badge-violet' : 'badge-teal'}`}>
+                  {isSensitive ? '🔒 sensitive' : '🔐 encrypted'}
+                </span>
+                <span className="badge badge-indigo">{snippet.language}</span>
+                <span className={`badge ${snippet.visibility === 'private' ? 'badge-rose' : snippet.visibility === 'project' ? 'badge-sky' : 'badge-emerald'}`}>
+                  {snippet.visibility}
+                </span>
+              </div>
+            </div>
+
+            {snippet.description && <p className={styles.desc}>{snippet.description}</p>}
+
+            {tags.length > 0 && (
+              <div className={styles.tags}>
+                {tags.map(t => <span key={t} className={styles.tag}>#{t}</span>)}
+              </div>
+            )}
+
+            {isSensitive && (
+              <div className={styles.encBanner}>
+                <span>🔒</span>
+                <div>
+                  <strong>Zero-knowledge encrypted</strong>
+                  <p>This snippet's plaintext is never stored on the server. Only you (and authorized recipients) can decrypt it.</p>
+                </div>
+              </div>
+            )}
+
+            <div className={styles.editorWrap}>
+              <Editor
+                height="480px"
+                language={snippet.language}
+                value={displayCode}
+                theme={theme === 'dark' ? 'vs-dark' : 'light'}
+                options={{ readOnly: true, minimap: { enabled: false }, scrollBeyondLastLine: false, fontSize: 13 }}
+              />
+            </div>
+
+            <div className={styles.meta}>
+              <span>Created {new Date(snippet.created_at).toLocaleString()}</span>
+              {snippet.updated_at !== snippet.created_at && <span> · Updated {new Date(snippet.updated_at).toLocaleString()}</span>}
+              {snippet.copy_count > 0 && <span> · Copied {snippet.copy_count} time{snippet.copy_count !== 1 ? 's' : ''}</span>}
+              {snippet.expires_at && <span> · Expires {new Date(snippet.expires_at).toLocaleString()}</span>}
+            </div>
+
+            {aiAction && (
+              <div className={styles.aiStream}>
+                <StreamResponse
+                  snippetId={id}
+                  action={aiAction}
+                  model={ollamaModel}
+                  onClose={() => setAiAction(null)}
+                />
+              </div>
+            )}
+          </main>
+
+          <aside className={styles.sidebar}>
+            {ollamaAvailable && !isSensitive && (
+              <div className={`glass-card ${styles.aiCard}`}>
+                <h3 className={styles.aiTitle}>
+                  <span className={styles.aiIcon}>✦</span> AI Assistant
+                </h3>
+                <p className={styles.aiModel}>{ollamaModel}</p>
+                <div className={styles.aiActions}>
+                  <button className={styles.aiBtn} onClick={() => setAiAction(aiAction === 'explain' ? null : 'explain')}>
+                    Explain
+                  </button>
+                  <button className={styles.aiBtn} onClick={() => setAiAction(aiAction === 'summarize' ? null : 'summarize')}>
+                    Summarize
+                  </button>
+                  <button className={styles.aiBtn} onClick={() => setAiAction(aiAction === 'refactor' ? null : 'refactor')}>
+                    Refactor draft
+                  </button>
+                </div>
+                <p className={styles.aiNote}>Runs locally via Ollama. No cloud.</p>
+              </div>
+            )}
+
+            {ollamaAvailable && isSensitive && (
+              <div className={`glass-card ${styles.aiCard}`}>
+                <h3 className={styles.aiTitle}>✦ AI Assistant</h3>
+                <p className={styles.aiNote}>AI is not available for sensitive snippets to protect your privacy.</p>
+              </div>
+            )}
+
+            {!ollamaAvailable && (
+              <div className={`glass-card ${styles.aiCard}`}>
+                <h3 className={styles.aiTitle}>✦ AI Assistant</h3>
+                <p className={styles.aiNote}>Ollama not detected. Start Ollama to enable explain, summarize, and refactor actions.</p>
+              </div>
+            )}
+
+            <div className={`glass-card ${styles.infoCard}`}>
+              <h3 className={styles.infoTitle}>Security</h3>
+              <div className={styles.infoRow}>
+                <span className={`badge ${isSensitive ? 'badge-violet' : 'badge-teal'}`}>
+                  {isSensitive ? 'Client-side' : 'Server-side'}
+                </span>
+                <span className={styles.infoText}>{isSensitive ? 'AES-GCM + sealed box' : 'AES-256-GCM'}</span>
+              </div>
+              {isSensitive && (
+                <p className={styles.infoNote}>Server stores ciphertext only. Plaintext never transmitted.</p>
+              )}
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   );
