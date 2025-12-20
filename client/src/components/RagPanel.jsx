@@ -32,23 +32,29 @@ export default function RagPanel() {
 
   return (
     <div className={styles.panel}>
-      <p className={styles.heading}>Ask about your snippets</p>
+      <div className={styles.header}>
+        <span className={styles.icon}>✦</span>
+        <span className={styles.title}>Ask about your snippets</span>
+        <span className="badge badge-violet" style={{ marginLeft: 'auto' }}>RAG · Local Ollama</span>
+      </div>
       <form className={styles.form} onSubmit={handleAsk}>
         <input
-          className={styles.input}
-          placeholder="e.g. How do I authenticate with the GitHub API?"
+          className="input-glass"
+          placeholder="e.g. How do I set up JWT auth? What snippets use async/await?"
           value={question}
           onChange={e => setQuestion(e.target.value)}
           disabled={loading}
         />
-        <button className={styles.btn} type="submit" disabled={loading || !question.trim()}>
+        <button className="btn-primary" type="submit" disabled={loading || !question.trim()}>
           {loading ? '…' : 'Ask'}
         </button>
       </form>
       {error && <p className={styles.error}>{error}</p>}
       {answer && (
         <div className={styles.answerCard}>
-          {lowConfidence && <p className={styles.warning}>Low confidence — results may be incomplete.</p>}
+          {lowConfidence && (
+            <div className={styles.lowConf}>⚠ Low confidence — index more snippets or try a different question.</div>
+          )}
           <p className={styles.answerText}>{answer}</p>
           <CitationList citations={citations} />
         </div>
