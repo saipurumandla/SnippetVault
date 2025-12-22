@@ -35,6 +35,11 @@ router.post('/login', validate(registerSchema), (req, res) => {
 
 const authMiddleware = require('../middleware/authMiddleware');
 
+router.get('/users', authMiddleware, (req, res) => {
+  const users = db.prepare('SELECT id, email, enc_public_key FROM users ORDER BY email').all();
+  res.json(users);
+});
+
 router.post('/enc-pubkey', authMiddleware, (req, res) => {
   const { encPublicKey } = req.body;
   if (!encPublicKey) return res.status(400).json({ error: 'encPublicKey required' });

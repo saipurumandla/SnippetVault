@@ -37,6 +37,7 @@ app.use('/api/share', require('./routes/share'));  // limiter mounted above
 app.use('/api/expired', require('./routes/expired'));
 app.use('/api/backup', require('./routes/backup'));
 app.use('/api/rag', require('./routes/rag'));
+app.use('/api/security', require('./routes/security'));
 app.use('/api/assistant', require('./routes/assistant'));
 app.use('/api/stream', require('./routes/stream'));
 
