@@ -15,10 +15,10 @@ export default function CitationList({ citations }) {
             key={c.snippetId}
             className={styles.chip}
             onClick={() => navigate(`/snippet/${c.snippetId}`)}
-            title={`${c.title} (${c.language})`}
           >
-            {c.title}
-            <span className={styles.lang}>{c.language}</span>
+            <span className={styles.chipId}>#{c.snippetId}</span>
+            <span className={styles.chipTitle}>{c.title}</span>
+            {c.language && <span className={styles.chipLang}>{c.language}</span>}
           </button>
         ))}
       </div>
