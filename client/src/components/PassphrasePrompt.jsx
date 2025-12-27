@@ -13,7 +13,7 @@ export default function PassphrasePrompt({ onUnlock, onCancel }) {
     setError('');
     try {
       const encPrivKeyRaw = localStorage.getItem('encPrivateKeyEnc');
-      if (!encPrivKeyRaw) throw new Error('No encrypted key found. Set up secure mode first.');
+      if (!encPrivKeyRaw) throw new Error('No keypair found. Go to Settings → Encryption keys to set one up.');
       const encPrivKey = JSON.parse(encPrivKeyRaw);
       const privateKey = await decryptPrivateKey(encPrivKey, passphrase);
       onUnlock(privateKey);
@@ -27,11 +27,12 @@ export default function PassphrasePrompt({ onUnlock, onCancel }) {
   return (
     <div className={styles.overlay}>
       <form className={styles.dialog} onSubmit={handleSubmit}>
-        <h2 className={styles.title}>Unlock secure snippet</h2>
-        <p className={styles.desc}>Enter your passphrase to decrypt this snippet.</p>
+        <div className={styles.icon}>🔒</div>
+        <h2 className={styles.title}>Unlock sensitive snippet</h2>
+        <p className={styles.desc}>Enter your passphrase to decrypt. Unlock session lasts 15 minutes.</p>
         {error && <p className={styles.error}>{error}</p>}
         <input
-          className={styles.input}
+          className="input-glass"
           type="password"
           placeholder="Passphrase"
           value={passphrase}
@@ -40,8 +41,8 @@ export default function PassphrasePrompt({ onUnlock, onCancel }) {
           required
         />
         <div className={styles.actions}>
-          <button type="button" className={styles.cancel} onClick={onCancel}>Cancel</button>
-          <button type="submit" className={styles.btn} disabled={loading}>
+          <button type="button" className="btn-ghost" onClick={onCancel}>Cancel</button>
+          <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Unlocking…' : 'Unlock'}
           </button>
         </div>
