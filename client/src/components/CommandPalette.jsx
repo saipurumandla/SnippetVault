@@ -1,18 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
 import { api } from '../lib/api';
+import { Plus, FolderOpen, ShieldCheck, HardDrive, Settings2, BookOpen, Archive, Tag, Search } from 'lucide-react';
 import styles from './CommandPalette.module.css';
 
 const ACTIONS = [
-  { id: 'new-snippet',   label: 'New Snippet',      type: 'action', icon: '✚', path: '/snippet/new' },
-  { id: 'new-project',   label: 'New Project',       type: 'action', icon: '◈', path: '/projects' },
-  { id: 'projects',      label: 'Go to Projects',    type: 'action', icon: '◈', path: '/projects' },
-  { id: 'security',      label: 'Security Events',   type: 'action', icon: '🛡', path: '/security' },
-  { id: 'backup',        label: 'Backup & Restore',  type: 'action', icon: '☁', path: '/backup' },
-  { id: 'settings',      label: 'Settings',          type: 'action', icon: '⚙', path: '/settings' },
-  { id: 'docs',          label: 'Documentation',     type: 'action', icon: '📖', path: '/docs' },
-  { id: 'toggle-theme',  label: 'Toggle Theme',      type: 'action', icon: '◐' },
+  { id: 'new-snippet', label: 'New Snippet',      type: 'action', Icon: Plus,        path: '/snippet/new' },
+  { id: 'new-project', label: 'New Project',      type: 'action', Icon: FolderOpen,  path: '/projects' },
+  { id: 'projects',    label: 'Go to Projects',   type: 'action', Icon: FolderOpen,  path: '/projects' },
+  { id: 'security',    label: 'Security Events',  type: 'action', Icon: ShieldCheck, path: '/security' },
+  { id: 'backup',      label: 'Backup & Restore', type: 'action', Icon: HardDrive,   path: '/backup' },
+  { id: 'settings',    label: 'Settings',         type: 'action', Icon: Settings2,   path: '/settings' },
+  { id: 'docs',        label: 'Documentation',    type: 'action', Icon: BookOpen,    path: '/docs' },
 ];
 
 function fuzzy(str, q) {
@@ -56,13 +55,13 @@ export default function CommandPalette() {
   }, [open]);
 
   const snippetItems = snippets.filter(s => fuzzy(s.title, query) || fuzzy(s.language, query))
-    .slice(0, 5).map(s => ({ id: `s-${s.id}`, label: s.title, secondary: s.language, type: 'snippet', path: `/snippet/${s.id}` }));
+    .slice(0, 5).map(s => ({ id: `s-${s.id}`, label: s.title, secondary: s.language, type: 'snippet', Icon: Archive, path: `/snippet/${s.id}` }));
 
   const projectItems = projects.filter(p => fuzzy(p.name, query))
-    .slice(0, 3).map(p => ({ id: `p-${p.id}`, label: p.name, type: 'project', path: '/projects' }));
+    .slice(0, 3).map(p => ({ id: `p-${p.id}`, label: p.name, type: 'project', Icon: FolderOpen, path: '/projects' }));
 
   const tagItems = (Array.isArray(tags) ? tags : []).filter(t => fuzzy(t, query))
-    .slice(0, 3).map(t => ({ id: `t-${t}`, label: `#${t}`, type: 'tag', path: `/vault?tag=${t}` }));
+    .slice(0, 3).map(t => ({ id: `t-${t}`, label: `#${t}`, type: 'tag', Icon: Tag, path: `/vault?tag=${t}` }));
 
   const actionItems = ACTIONS.filter(a => fuzzy(a.label, query));
   const items = [...snippetItems, ...projectItems, ...tagItems, ...actionItems];
@@ -85,7 +84,7 @@ export default function CommandPalette() {
     <div className={styles.overlay} onClick={() => setOpen(false)}>
       <div className={styles.dialog} onClick={e => e.stopPropagation()}>
         <div className={styles.inputRow}>
-          <span className={styles.inputIcon}>⌕</span>
+          <Search size={16} className={styles.inputIcon} />
           <input
             ref={inputRef}
             className={styles.input}
@@ -105,7 +104,7 @@ export default function CommandPalette() {
                 onClick={() => select(item)}
                 onMouseEnter={() => setActive(i)}
               >
-                {item.icon && <span className={styles.itemIcon}>{item.icon}</span>}
+                {item.Icon && <item.Icon size={15} className={styles.itemIcon} />}
                 <span className={styles.itemLabel}>{item.label}</span>
                 {item.secondary && <span className={styles.itemSecondary}>{item.secondary}</span>}
                 <span className={`badge ${TYPE_COLORS[item.type] || 'badge-indigo'} ${styles.typeBadge}`}>{item.type}</span>

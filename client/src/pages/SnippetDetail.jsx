@@ -33,6 +33,8 @@ export default function SnippetDetail() {
   const clipInterval = useRef(null);
 
   useEffect(() => {
+    if (!id || id === 'undefined') { navigate('/vault', { replace: true }); return; }
+
     api.get(`/snippets/${id}`)
       .then(s => {
         setSnippet(s);

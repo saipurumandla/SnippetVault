@@ -5,9 +5,10 @@ import { useToast } from '../context/ToastContext';
 import styles from './SnippetCard.module.css';
 
 const LANG_COLORS = {
-  javascript: '#f59e0b', typescript: '#3b82f6', python: '#10b981',
-  bash: '#6366f1', sql: '#8b5cf6', go: '#14b8a6', rust: '#f97316',
-  java: '#ef4444', css: '#0ea5e9', html: '#f97316',
+  javascript: '#f5a623', typescript: '#38bdf8', python: '#10d98a',
+  bash: '#a78bfa',       sql: '#c084fc',        go: '#00d4e8',
+  rust: '#fb923c',       java: '#f87171',       css: '#67e8f9',
+  html: '#fda4af',       csharp: '#818cf8',     cpp: '#f43f5e',
 };
 
 export default function SnippetCard({ snippet, onDelete }) {
@@ -16,8 +17,10 @@ export default function SnippetCard({ snippet, onDelete }) {
   const [copied, setCopied] = useState(false);
   const [copyTimer, setCopyTimer] = useState(null);
 
+  if (!snippet?.id) return null;
+
   const isSensitive = snippet.encryption_mode === 'sensitive';
-  const langColor = LANG_COLORS[snippet.language] || '#6366f1';
+  const langColor = LANG_COLORS[snippet.language] || '#14b8a6';
 
   const handleCopy = async (e) => {
     e.stopPropagation();
@@ -49,13 +52,13 @@ export default function SnippetCard({ snippet, onDelete }) {
           <span className={styles.title}>{snippet.title}</span>
         </div>
         <div className={styles.badges}>
-          <span className={styles.langBadge} style={{ color: langColor, borderColor: `${langColor}40` }}>
+          <span className={styles.langBadge} style={{ color: langColor, borderColor: `${langColor}30` }}>
             {snippet.language}
           </span>
           {isSensitive ? (
-            <span className="badge badge-violet">sensitive</span>
+            <span className="badge badge-amber">🔒 sensitive</span>
           ) : (
-            <span className="badge badge-teal">encrypted</span>
+            <span className="badge badge-teal">🔐 enc</span>
           )}
         </div>
       </div>

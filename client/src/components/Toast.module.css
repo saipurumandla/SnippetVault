@@ -32,7 +32,7 @@
 
 .success { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16,185,129,0.3); color: #10b981; }
 .error   { background: rgba(244, 63, 94, 0.15);  border: 1px solid rgba(244,63,94,0.3);  color: #f43f5e; }
-.info    { background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99,102,241,0.3); color: #6366f1; }
+.info    { background: rgba(45, 212, 191, 0.12); border: 1px solid rgba(45,212,191,0.25); color: var(--teal); }
 .warning { background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245,158,11,0.3); color: #f59e0b; }
 
 .icon { font-size: 14px; font-weight: 700; }

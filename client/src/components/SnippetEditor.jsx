@@ -14,7 +14,7 @@ export default function SnippetEditor() {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const { toast } = useToast();
-  const isNew = id === 'new';
+  const isNew = !id || id === 'new';
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');

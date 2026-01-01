@@ -7,7 +7,24 @@ import Header from '../components/Header';
 import RagPanel from '../components/RagPanel';
 import styles from './Vault.module.css';
 
-const LANGUAGES = ['javascript', 'typescript', 'python', 'bash', 'sql', 'json', 'yaml', 'html', 'css', 'go', 'rust', 'java', 'csharp', 'cpp', 'markdown', 'plaintext'];
+const LANG_META = [
+  { id: 'javascript', label: 'JS',   color: '#f5a623' },
+  { id: 'typescript', label: 'TS',   color: '#38bdf8' },
+  { id: 'python',     label: 'PY',   color: '#10d98a' },
+  { id: 'bash',       label: 'SH',   color: '#a78bfa' },
+  { id: 'sql',        label: 'SQL',  color: '#c084fc' },
+  { id: 'json',       label: 'JSON', color: '#6b7a8d' },
+  { id: 'yaml',       label: 'YML',  color: '#6b7a8d' },
+  { id: 'html',       label: 'HTML', color: '#fda4af' },
+  { id: 'css',        label: 'CSS',  color: '#67e8f9' },
+  { id: 'go',         label: 'GO',   color: '#00d4e8' },
+  { id: 'rust',       label: 'RS',   color: '#fb923c' },
+  { id: 'java',       label: 'JV',   color: '#f87171' },
+  { id: 'csharp',     label: 'C#',   color: '#818cf8' },
+  { id: 'cpp',        label: 'C++',  color: '#f43f5e' },
+  { id: 'markdown',   label: 'MD',   color: '#4a5568' },
+  { id: 'plaintext',  label: 'TXT',  color: '#3d4a5c' },
+];
 
 export default function Vault() {
   const [snippets, setSnippets] = useState([]);
@@ -64,21 +81,35 @@ export default function Vault() {
       <aside className={styles.sidebar}>
         <div className={styles.sideSection}>
           <p className={styles.sideLabel}>Language</p>
-          <button className={`${styles.sideItem} ${!selectedLang ? styles.sideActive : ''}`} onClick={() => setSelectedLang('')}>All</button>
-          {LANGUAGES.map(l => (
-            <button key={l} className={`${styles.sideItem} ${selectedLang === l ? styles.sideActive : ''}`} onClick={() => setSelectedLang(l)} style={{ '--lang-dot': l }}>
-              {l}
+          <div className={styles.langGrid}>
+            <button
+              className={`${styles.langChip} ${!selectedLang ? styles.langChipAll : ''}`}
+              onClick={() => setSelectedLang('')}
+            >
+              All
             </button>
-          ))}
+            {LANG_META.map(l => (
+              <button
+                key={l.id}
+                className={`${styles.langChip} ${selectedLang === l.id ? styles.langChipActive : ''}`}
+                onClick={() => setSelectedLang(l.id)}
+                title={l.id}
+                style={{ '--lc': l.color }}
+              >
+                <span className={styles.langDot} style={{ background: l.color }} />
+                {l.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {projects.length > 0 && (
           <div className={styles.sideSection}>
             <p className={styles.sideLabel}>Projects</p>
-            <button className={`${styles.sideItem} ${!selectedProject ? styles.sideActive : ''}`} onClick={() => setSelectedProject(null)}>All projects</button>
+            <button className={`${styles.sideItem} ${!selectedProject ? styles.sideActive : ''}`} onClick={() => setSelectedProject(null)}>◈ All</button>
             {projects.map(p => (
               <button key={p.id} className={`${styles.sideItem} ${selectedProject === p.id ? styles.sideActive : ''}`} onClick={() => setSelectedProject(p.id)}>
-                {p.name}
+                ◈ {p.name}
               </button>
             ))}
           </div>
@@ -87,12 +118,14 @@ export default function Vault() {
         {tags.length > 0 && (
           <div className={styles.sideSection}>
             <p className={styles.sideLabel}>Tags</p>
-            <button className={`${styles.sideItem} ${!selectedTag ? styles.sideActive : ''}`} onClick={() => setSelectedTag('')}>All tags</button>
-            {tags.map(t => (
-              <button key={t} className={`${styles.sideItem} ${selectedTag === t ? styles.sideActive : ''}`} onClick={() => setSelectedTag(t)}>
-                #{t}
-              </button>
-            ))}
+            <div className={styles.tagPills}>
+              <button className={`${styles.tagPill} ${!selectedTag ? styles.tagPillActive : ''}`} onClick={() => setSelectedTag('')}>all</button>
+              {tags.map(t => (
+                <button key={t} className={`${styles.tagPill} ${selectedTag === t ? styles.tagPillActive : ''}`} onClick={() => setSelectedTag(t)}>
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </aside>

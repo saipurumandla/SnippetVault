@@ -47,7 +47,7 @@
 }
 
 .copyBtn { color: var(--indigo); }
-.copyBtn:hover { background: rgba(99,102,241,0.1); }
+.copyBtn:hover { background: rgba(45,212,191,0.1); }
 .copiedBtn { color: var(--emerald); border-color: rgba(16,185,129,0.3); }
 .cancelBtn { color: var(--amber); border-color: rgba(245,158,11,0.3); }
 .closeBtn { color: var(--text-muted); font-size: 13px; }
