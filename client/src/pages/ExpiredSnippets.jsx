@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import Header from '../components/Header';
+import ConfirmModal from '../components/ConfirmModal';
 import styles from './ExpiredSnippets.module.css';
 
 export default function ExpiredSnippets() {
   const [snippets, setSnippets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [confirmPurge, setConfirmPurge] = useState(null);
   const { toast } = useToast();
 
   const load = () => {
@@ -14,8 +16,9 @@ export default function ExpiredSnippets() {
   };
   useEffect(() => { load(); }, []);
 
-  const handlePurge = async (id) => {
-    if (!confirm('Permanently delete this expired snippet?')) return;
+  const doPurge = async () => {
+    const id = confirmPurge;
+    setConfirmPurge(null);
     try {
       await api.del(`/expired/${id}`);
       toast('Snippet purged', 'success');
@@ -26,6 +29,16 @@ export default function ExpiredSnippets() {
   return (
     <div>
       <Header />
+      {confirmPurge && (
+        <ConfirmModal
+          title="Permanently purge snippet?"
+          message="This deletes the expired ciphertext from the database. It cannot be recovered."
+          confirmLabel="Purge"
+          danger
+          onConfirm={doPurge}
+          onCancel={() => setConfirmPurge(null)}
+        />
+      )}
       <div className="page-content">
         <div className="page-header">
           <h1 className="page-title">Expired Snippets</h1>
@@ -51,7 +64,7 @@ export default function ExpiredSnippets() {
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <span className="badge badge-rose">expired</span>
-                  <button className="btn-danger" onClick={() => handlePurge(s.id)}>Purge</button>
+                  <button className="btn-danger" onClick={() => setConfirmPurge(s.id)}>Purge</button>
                 </div>
               </div>
             ))}

@@ -1,12 +1,26 @@
 const express = require('express');
-const crypto = require('crypto');
 const db = require('../db');
 const auth = require('../middleware/authMiddleware');
-const { encryptAesGcm, wrapKey } = require('../crypto');
-const { getOrCreateProjectKey, getPersonalKey } = require('../keystore');
 const { snippetSchema, validate } = require('../validation');
+const { indexSnippet } = require('../rag/indexer');
+const { embed } = require('../rag/embedder');
 
 const router = express.Router();
+
+function reindex(snippet) {
+  if (snippet.encryption_mode === 'sensitive') return;
+  indexSnippet(snippet, embed).catch(err =>
+    console.error('rag reindex failed for snippet', snippet.id, err.message)
+  );
+}
+
+function removeFromIndex(snippetId) {
+  db.prepare('DELETE FROM rag_chunks WHERE snippet_id = ?').run(snippetId);
+}
+
+function parseTags(raw) {
+  return raw ? raw.split(',').filter(Boolean) : [];
+}
 
 router.get('/', auth, (req, res) => {
   const { language, q, project_id } = req.query;
@@ -20,7 +34,7 @@ router.get('/', auth, (req, res) => {
     if (matchIds.length === 0) return res.json([]);
 
     const placeholders = matchIds.map(() => '?').join(',');
-    const snippets = db.prepare(`
+    const rows = db.prepare(`
       SELECT s.*, GROUP_CONCAT(st.tag) as tags
       FROM snippets s
       LEFT JOIN snippet_tags st ON st.snippet_id = s.id
@@ -29,7 +43,7 @@ router.get('/', auth, (req, res) => {
       GROUP BY s.id
     `).all(...matchIds, req.user.id, now);
 
-    return res.json(snippets.map(s => ({ ...s, tags: s.tags ? s.tags.split(',') : [] })));
+    return res.json(rows.map(s => ({ ...s, tags: parseTags(s.tags) })));
   }
 
   const params = [req.user.id, req.user.id, now];
@@ -41,17 +55,10 @@ router.get('/', auth, (req, res) => {
     ))
   ) AND (s.expires_at IS NULL OR s.expires_at > ?)`;
 
-  if (language) {
-    where += ' AND s.language = ?';
-    params.push(language);
-  }
+  if (language) { where += ' AND s.language = ?'; params.push(language); }
+  if (project_id) { where += ' AND s.project_id = ?'; params.push(project_id); }
 
-  if (project_id) {
-    where += ' AND s.project_id = ?';
-    params.push(project_id);
-  }
-
-  const snippets = db.prepare(`
+  const rows = db.prepare(`
     SELECT s.*, GROUP_CONCAT(st.tag) as tags
     FROM snippets s
     LEFT JOIN snippet_tags st ON st.snippet_id = s.id
@@ -60,15 +67,19 @@ router.get('/', auth, (req, res) => {
     ORDER BY s.updated_at DESC
   `).all(...params);
 
-  res.json(snippets.map(s => ({
-    ...s,
-    tags: s.tags ? s.tags.split(',') : [],
-  })));
+  res.json(rows.map(s => ({ ...s, tags: parseTags(s.tags) })));
 });
 
 router.get('/:id', auth, (req, res) => {
-  const snippet = db.prepare('SELECT * FROM snippets WHERE id = ? AND author_id = ?').get(req.params.id, req.user.id);
+  const snippet = db.prepare('SELECT * FROM snippets WHERE id = ?').get(req.params.id);
   if (!snippet) return res.status(404).json({ error: 'Not found' });
+
+  const canRead = snippet.author_id === req.user.id
+    || snippet.visibility === 'shared'
+    || (snippet.visibility === 'project' && snippet.project_id &&
+        db.prepare('SELECT 1 FROM project_members WHERE project_id = ? AND user_id = ?').get(snippet.project_id, req.user.id));
+
+  if (!canRead) return res.status(403).json({ error: 'Forbidden' });
 
   const tags = db.prepare('SELECT tag FROM snippet_tags WHERE snippet_id = ?').all(snippet.id).map(r => r.tag);
   res.json({ ...snippet, tags });
@@ -79,28 +90,16 @@ router.post('/', auth, validate(snippetSchema), (req, res) => {
   if (!title || !code || !language) return res.status(400).json({ error: 'title, code, and language are required' });
 
   const now = new Date().toISOString();
-
-  let storedCode = code;
-  let storedWrappedKey = null;
-
-  if (encryption_mode === 'standard') {
-    const snippetKey = crypto.randomBytes(32);
-    const projectKey = project_id
-      ? getOrCreateProjectKey(project_id)
-      : getPersonalKey(req.user.id);
-    storedCode = encryptAesGcm(code, snippetKey);
-    storedWrappedKey = wrapKey(snippetKey, projectKey);
-  } else if (encryption_mode === 'sensitive') {
-    storedCode = code;
-    storedWrappedKey = wrapped_key || null;
-  }
+  // Standard = plaintext. Sensitive = client-encrypted ciphertext sent from browser.
+  const storedWrappedKey = encryption_mode === 'sensitive' ? (wrapped_key || null) : null;
 
   const result = db.prepare(`
     INSERT INTO snippets (title, description, code, language, visibility, encryption_mode, wrapped_key, project_id, author_id, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(title, description || null, storedCode, language, visibility, encryption_mode, storedWrappedKey, project_id || null, req.user.id, now, now);
+  `).run(title, description || null, code, language, visibility, encryption_mode, storedWrappedKey, project_id || null, req.user.id, now, now);
 
   const snippet = db.prepare('SELECT * FROM snippets WHERE id = ?').get(result.lastInsertRowid);
+  reindex(snippet);
   res.status(201).json({ ...snippet, tags: [] });
 });
 
@@ -110,6 +109,10 @@ router.put('/:id', auth, (req, res) => {
 
   const { title, description, code, language, visibility } = req.body;
   const now = new Date().toISOString();
+
+  if (code && code !== snippet.code && snippet.encryption_mode === 'standard') {
+    db.prepare('INSERT INTO snippet_versions (snippet_id, code, changed_at) VALUES (?, ?, ?)').run(snippet.id, snippet.code, now);
+  }
 
   db.prepare(`
     UPDATE snippets SET title = ?, description = ?, code = ?, language = ?, visibility = ?, updated_at = ?
@@ -124,12 +127,9 @@ router.put('/:id', auth, (req, res) => {
     snippet.id
   );
 
-  if (code && code !== snippet.code) {
-    db.prepare('INSERT INTO snippet_versions (snippet_id, code, changed_at) VALUES (?, ?, ?)').run(snippet.id, snippet.code, now);
-  }
-
   const updated = db.prepare('SELECT * FROM snippets WHERE id = ?').get(snippet.id);
   const tags = db.prepare('SELECT tag FROM snippet_tags WHERE snippet_id = ?').all(snippet.id).map(r => r.tag);
+  reindex(updated);
   res.json({ ...updated, tags });
 });
 
@@ -137,6 +137,7 @@ router.delete('/:id', auth, (req, res) => {
   const snippet = db.prepare('SELECT id FROM snippets WHERE id = ? AND author_id = ?').get(req.params.id, req.user.id);
   if (!snippet) return res.status(404).json({ error: 'Not found' });
 
+  removeFromIndex(snippet.id);
   db.prepare('DELETE FROM snippet_tags WHERE snippet_id = ?').run(snippet.id);
   db.prepare('DELETE FROM snippet_versions WHERE snippet_id = ?').run(snippet.id);
   db.prepare('DELETE FROM snippets WHERE id = ?').run(snippet.id);

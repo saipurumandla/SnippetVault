@@ -1,7 +1,8 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Archive, FolderOpen, Clock, ShieldCheck, HardDrive, Settings2, BookOpen, LogOut } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { Archive, FolderOpen, Clock, ShieldCheck, HardDrive, Settings2, BookOpen, LogOut, Sun, Moon } from 'lucide-react';
 import styles from './NavSidebar.module.css';
 
 const NAV = [
@@ -16,6 +17,7 @@ const NAV = [
 
 export default function NavSidebar() {
   const { logout } = useAuth();
+  const { theme, toggle } = useTheme();
   const navigate = useNavigate();
 
   return (
@@ -37,6 +39,9 @@ export default function NavSidebar() {
         ))}
       </div>
       <div className={styles.bottom}>
+        <button className={styles.themeBtn} onClick={toggle} title="Toggle theme">
+          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+        </button>
         <button className={styles.logoutBtn} onClick={() => { logout(); navigate('/login'); }}>
           <LogOut size={14} />
           Sign out

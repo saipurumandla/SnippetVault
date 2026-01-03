@@ -30,7 +30,6 @@ export default function CommandPalette() {
   const [active, setActive] = useState(0);
   const inputRef = useRef(null);
   const navigate = useNavigate();
-  const { toggle } = useTheme();
 
   useEffect(() => {
     const handler = (e) => {
@@ -68,7 +67,6 @@ export default function CommandPalette() {
 
   const select = (item) => {
     setOpen(false);
-    if (item.id === 'toggle-theme') { toggle(); return; }
     if (item.path) navigate(item.path);
   };
 

@@ -55,10 +55,8 @@ export default function SnippetCard({ snippet, onDelete }) {
           <span className={styles.langBadge} style={{ color: langColor, borderColor: `${langColor}30` }}>
             {snippet.language}
           </span>
-          {isSensitive ? (
+          {isSensitive && (
             <span className="badge badge-amber">🔒 sensitive</span>
-          ) : (
-            <span className="badge badge-teal">🔐 enc</span>
           )}
         </div>
       </div>

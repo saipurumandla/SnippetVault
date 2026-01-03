@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- dark background -->
+  <rect width="32" height="32" rx="6" fill="#0d1117"/>
+
+  <!-- Archive icon (mirrors Lucide Archive, scaled to ~20px centred in 32px canvas) -->
+  <!-- lid / top bar -->
+  <rect x="5" y="7" width="22" height="5" rx="1.2"
+        fill="none" stroke="#ff6b00" stroke-width="1.8" stroke-linejoin="round"/>
+  <!-- body / box -->
+  <path d="M7 12 L7 23 Q7 24.5 8.5 24.5 L23.5 24.5 Q25 24.5 25 23 L25 12"
+        fill="none" stroke="#ff6b00" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- inner horizontal line -->
+  <line x1="12.5" y1="18" x2="19.5" y2="18"
+        stroke="#ff6b00" stroke-width="1.8" stroke-linecap="round"/>
+</svg>

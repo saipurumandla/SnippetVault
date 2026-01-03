@@ -8,6 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import PassphrasePrompt from '../components/PassphrasePrompt';
 import ShareDialog from '../components/ShareDialog';
 import StreamResponse from '../components/StreamResponse';
+import ConfirmModal from '../components/ConfirmModal';
 import Header from '../components/Header';
 import styles from './SnippetDetail.module.css';
 
@@ -25,10 +26,13 @@ export default function SnippetDetail() {
   const [showPassphrase, setShowPassphrase] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [aiAction, setAiAction] = useState(null);
+  const [convertLang, setConvertLang] = useState('python');
   const [ollamaAvailable, setOllamaAvailable] = useState(false);
   const [ollamaModel, setOllamaModel] = useState('qwen3-coder:30b');
   const [clipTimer, setClipTimer] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showCopyConfirm, setShowCopyConfirm] = useState(false);
   const unlockTimer = useRef(null);
   const clipInterval = useRef(null);
 
@@ -75,8 +79,9 @@ export default function SnippetDetail() {
     const code = displayCode;
     if (!code || code.startsWith('••')) { toast('Unlock snippet first', 'warning'); return; }
 
-    if (isSensitive) {
-      if (!confirm('Copy decrypted sensitive content? It will be cleared from clipboard in 45 seconds.')) return;
+    if (isSensitive && !showCopyConfirm) {
+      setShowCopyConfirm(true);
+      return;
     }
 
     await navigator.clipboard.writeText(code);
@@ -102,13 +107,20 @@ export default function SnippetDetail() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Delete this snippet permanently?')) return;
+  const handleDelete = () => setShowDeleteConfirm(true);
+
+  const doDelete = async () => {
+    setShowDeleteConfirm(false);
     try {
       await api.del(`/snippets/${id}`);
       toast('Snippet deleted', 'success');
       navigate('/vault');
     } catch (err) { toast(err.message, 'error'); }
+  };
+
+  const doCopy = async () => {
+    setShowCopyConfirm(false);
+    await handleCopy();
   };
 
   if (!snippet) return (
@@ -128,6 +140,25 @@ export default function SnippetDetail() {
     <div>
       <Header />
       {showPassphrase && <PassphrasePrompt onUnlock={handleUnlock} onCancel={() => { setShowPassphrase(false); navigate('/vault'); }} />}
+      {showDeleteConfirm && (
+        <ConfirmModal
+          title="Delete snippet?"
+          message="This will permanently remove the snippet and all its versions. There's no undo."
+          confirmLabel="Delete"
+          danger
+          onConfirm={doDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+      {showCopyConfirm && (
+        <ConfirmModal
+          title="Copy sensitive content?"
+          message="The clipboard will be automatically cleared after 45 seconds."
+          confirmLabel="Copy"
+          onConfirm={doCopy}
+          onCancel={() => setShowCopyConfirm(false)}
+        />
+      )}
       {showShare && snippet && (
         <ShareDialog
           snippet={{ ...snippet, code: decryptedCode || snippet.code }}
@@ -166,9 +197,7 @@ export default function SnippetDetail() {
                 {snippet.title}
               </h1>
               <div className={styles.badges}>
-                <span className={`badge ${isSensitive ? 'badge-violet' : 'badge-teal'}`}>
-                  {isSensitive ? '🔒 sensitive' : '🔐 encrypted'}
-                </span>
+                {isSensitive && <span className="badge badge-amber">🔒 sensitive</span>}
                 <span className="badge badge-indigo">{snippet.language}</span>
                 <span className={`badge ${snippet.visibility === 'private' ? 'badge-rose' : snippet.visibility === 'project' ? 'badge-sky' : 'badge-emerald'}`}>
                   {snippet.visibility}
@@ -212,14 +241,19 @@ export default function SnippetDetail() {
             </div>
 
             {aiAction && (
-              <div className={styles.aiStream}>
-                <StreamResponse
-                  snippetId={id}
-                  action={aiAction}
-                  model={ollamaModel}
-                  onClose={() => setAiAction(null)}
-                />
-              </div>
+              <StreamResponse
+                snippetId={id}
+                action={aiAction}
+                model={ollamaModel}
+                language={snippet.language}
+                targetLanguage={convertLang}
+                snippetTitle={snippet.title}
+                onClose={() => setAiAction(null)}
+                onApplied={(newCode) => {
+                  setSnippet(s => ({ ...s, code: newCode }));
+                  setAiAction(null);
+                }}
+              />
             )}
           </main>
 
@@ -241,6 +275,28 @@ export default function SnippetDetail() {
                     Refactor draft
                   </button>
                 </div>
+
+                <div className={styles.convertSection}>
+                  <p className={styles.convertLabel}>Convert to language</p>
+                  <div className={styles.convertRow}>
+                    <select
+                      className={`select-glass ${styles.convertSelect}`}
+                      value={convertLang}
+                      onChange={e => setConvertLang(e.target.value)}
+                    >
+                      {['javascript','typescript','python','rust','go','java','csharp','cpp','bash','swift','kotlin','ruby','php'].filter(l => l !== snippet.language).map(l => (
+                        <option key={l} value={l}>{l}</option>
+                      ))}
+                    </select>
+                    <button
+                      className={styles.convertBtn}
+                      onClick={() => setAiAction(aiAction === 'convert' ? null : 'convert')}
+                    >
+                      Convert
+                    </button>
+                  </div>
+                </div>
+
                 <p className={styles.aiNote}>Runs locally via Ollama. No cloud.</p>
               </div>
             )}
@@ -259,18 +315,15 @@ export default function SnippetDetail() {
               </div>
             )}
 
-            <div className={`glass-card ${styles.infoCard}`}>
-              <h3 className={styles.infoTitle}>Security</h3>
-              <div className={styles.infoRow}>
-                <span className={`badge ${isSensitive ? 'badge-violet' : 'badge-teal'}`}>
-                  {isSensitive ? 'Client-side' : 'Server-side'}
-                </span>
-                <span className={styles.infoText}>{isSensitive ? 'AES-GCM + sealed box' : 'AES-256-GCM'}</span>
+            {isSensitive && (
+              <div className={`glass-card ${styles.infoCard}`}>
+                <h3 className={styles.infoTitle}>Security</h3>
+                <div className={styles.infoRow}>
+                  <span className="badge badge-amber">Zero-knowledge</span>
+                </div>
+                <p className={styles.infoNote}>Encrypted in browser (libsodium sealed box). Server stores ciphertext only. Plaintext never transmitted.</p>
               </div>
-              {isSensitive && (
-                <p className={styles.infoNote}>Server stores ciphertext only. Plaintext never transmitted.</p>
-              )}
-            </div>
+            )}
           </aside>
         </div>
       </div>

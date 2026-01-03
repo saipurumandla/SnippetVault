@@ -6,7 +6,7 @@
   top: 0;
   display: flex;
   flex-direction: column;
-  background: rgba(8, 12, 18, 0.92); /* almost transparent — dot grid shows */
+  background: var(--bg-glass);
   border-right: 1px solid var(--border-subtle);
   z-index: 50;
 }
@@ -111,6 +111,25 @@
 .themeBtn:hover {
   color: var(--accent);
   border-color: rgba(0,212,232,0.2);
+}
+
+.themeBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.themeBtn:hover {
+  color: var(--accent);
+  border-color: rgba(255,107,0,0.25);
 }
 
 .logoutBtn {

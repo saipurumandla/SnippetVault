@@ -139,6 +139,45 @@
 
 .aiNote { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
 
+.convertSection {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.convertLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+
+.convertRow {
+  display: flex;
+  gap: 7px;
+}
+
+.convertSelect { flex: 1; font-size: 12px !important; padding: 7px 28px 7px 10px !important; }
+
+.convertBtn {
+  background: var(--grad-primary);
+  color: #050a0f;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-ui);
+  padding: 0 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.convertBtn:hover { opacity: 0.88; }
+
 .infoTitle {
   font-size: 11px;
   text-transform: uppercase;

@@ -28,6 +28,7 @@ export default function SnippetEditor() {
   const [tags, setTags] = useState([]);
   const [projects, setProjects] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
 
   useEffect(() => {
     api.get('/projects').then(setProjects).catch(() => {});
@@ -59,6 +60,21 @@ export default function SnippetEditor() {
     if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); }
     if (e.key === 'Backspace' && !tagInput && tags.length) {
       setTags(prev => prev.slice(0, -1));
+    }
+  };
+
+  const handleSuggest = async () => {
+    if (!code.trim()) { toast('Write some code first', 'warning'); return; }
+    setSuggesting(true);
+    try {
+      const result = await api.post('/assistant/suggest', { code, language });
+      if (result.title) setTitle(result.title);
+      if (result.description) setDescription(result.description);
+      toast('Title and description updated', 'success');
+    } catch (err) {
+      toast('AI suggest failed — is Ollama running?', 'error');
+    } finally {
+      setSuggesting(false);
     }
   };
 
@@ -132,12 +148,24 @@ export default function SnippetEditor() {
               value={title}
               onChange={e => setTitle(e.target.value)}
             />
-            <input
-              className="input-glass"
-              placeholder="Description (optional)"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-            />
+            <div className={styles.descRow}>
+              <input
+                className="input-glass"
+                placeholder="Description (optional)"
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                className={styles.suggestBtn}
+                onClick={handleSuggest}
+                disabled={suggesting || !code.trim()}
+                title="Let AI suggest a title and description based on your code"
+              >
+                {suggesting ? '…' : '✦ AI Suggest'}
+              </button>
+            </div>
 
             <div className={styles.row}>
               <div className={styles.field}>
@@ -167,10 +195,10 @@ export default function SnippetEditor() {
 
             <div className={styles.encRow}>
               <div className={`${styles.encOption} ${!isSensitive ? styles.encActive : ''}`} onClick={() => setEncryptionMode('standard')}>
-                <span className={styles.encIcon}>🔐</span>
+                <span className={styles.encIcon}>◎</span>
                 <div>
                   <p className={styles.encTitle}>Standard</p>
-                  <p className={styles.encDesc}>Server-side AES-256-GCM — searchable</p>
+                  <p className={styles.encDesc}>Plaintext — access controlled by visibility</p>
                 </div>
                 {!isSensitive && <span className={styles.encCheck}>✓</span>}
               </div>
@@ -230,14 +258,14 @@ export default function SnippetEditor() {
 
           <aside className={styles.hints}>
             <div className={`glass-card ${styles.hintCard}`}>
-              <h3 className={styles.hintTitle}>Encryption modes</h3>
+              <h3 className={styles.hintTitle}>Mode</h3>
               <div className={styles.hintRow}>
                 <span className="badge badge-teal">Standard</span>
-                <p className={styles.hintText}>AES-256-GCM encrypted at rest. Server can decrypt for search. Fast, no friction.</p>
+                <p className={styles.hintText}>Stored as plaintext. Access controlled by visibility. Searchable and AI-ready.</p>
               </div>
               <div className={styles.hintRow}>
-                <span className="badge badge-violet">Sensitive</span>
-                <p className={styles.hintText}>Sealed box encrypted in your browser. Server stores ciphertext only. Requires passphrase to view.</p>
+                <span className="badge badge-amber">Sensitive</span>
+                <p className={styles.hintText}>Encrypted in your browser before upload. Server never sees plaintext. Not indexed, no AI.</p>
               </div>
             </div>
             <div className={`glass-card ${styles.hintCard}`}>

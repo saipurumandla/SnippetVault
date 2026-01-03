@@ -1,114 +1,162 @@
-# SnippetVault v2.0.0
+# SnippetVault
 
-Self-hosted code snippet manager for developer teams. Store, tag, search, and securely
-share code snippets with VS Code theming, a command palette, hybrid encryption, and
-AI-assisted search and code assistance powered by local Ollama models.
+Self-hosted, local-first code snippet manager for developer teams. Store, tag, search, and securely share code snippets with a futuristic dark UI, command palette, client-side encryption for sensitive content, and a fully local AI assistant powered by Ollama.
+
+---
 
 ## Requirements
 
 - Node.js 20+
 - npm 10+
-- [Ollama](https://ollama.ai) (for local AI features — optional)
+- [Ollama](https://ollama.ai) — for AI features (optional)
+
+---
 
 ## Install
 
 ```bash
+# Server dependencies
 npm install
+
+# Client dependencies
 npm install --prefix client
+
+# Configure environment
 cp .env.example .env
-# Edit .env — set JWT_SECRET and MASTER_KEY (64 hex chars)
 ```
 
-Generate MASTER_KEY:
+Edit `.env` and set at minimum:
+
+```
+JWT_SECRET=<long random string>
+```
+
+Generate a JWT secret:
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
+---
+
 ## Running
 
 ```bash
-npm run dev        # server on :3001, client on :5173
-npm start          # production server only
+npm run dev        # server :3001 + Vite client :5173
+npm start          # server only (production)
 ```
+
+Open **http://localhost:5173** in your browser.
+
+---
 
 ## Configuration
 
-| Variable       | Default         | Description                          |
-|----------------|-----------------|--------------------------------------|
-| PORT           | 3001            | Server port                          |
-| DB_PATH        | ./data/vault.db | SQLite database path                 |
-| JWT_SECRET     | (required)      | JWT signing secret                   |
-| MASTER_KEY     | (required)      | 64-char hex key for envelope enc     |
-| LOG_LEVEL      | info            | pino log level                       |
-| JWT_EXPIRES_IN | 24h             | JWT token TTL                        |
-| OPENAI_API_KEY | (optional)      | For RAG answer generation            |
-| OLLAMA_HOST    | localhost       | Ollama server host                   |
-| OLLAMA_PORT    | 11434           | Ollama server port                   |
+| Variable              | Default              | Description                                  |
+|-----------------------|----------------------|----------------------------------------------|
+| `PORT`                | 3001                 | Server port                                  |
+| `DB_PATH`             | ./data/vault.db      | SQLite database path                         |
+| `JWT_SECRET`          | *(required)*         | JWT signing secret                           |
+| `JWT_EXPIRES_IN`      | 24h                  | Token TTL                                    |
+| `LOG_LEVEL`           | info                 | pino log level                               |
+| `OLLAMA_HOST`         | localhost            | Ollama server host                           |
+| `OLLAMA_PORT`         | 11434                | Ollama server port                           |
+| `OLLAMA_DEFAULT_MODEL`| qwen3-coder:30b      | Model used for explain/summarize/refactor     |
+| `RAG_MODEL`           | qwen3-coder:30b      | Model used for RAG answer generation         |
+
+---
 
 ## Features
 
-**Core (v1.0.0 — 2022)**
-- Snippet CRUD with Monaco Editor syntax highlighting
-- VS Code dark/light theme with CSS custom properties
-- Language filter sidebar, full-text search (SQLite FTS5), tags
+### Snippet management
+- Monaco Editor with syntax highlighting for 16+ languages
+- Inline tag editor — type and press Enter
+- Language filter sidebar with color-coded chips
+- Full-text search across title, description, and code body (SQLite FTS5)
 - Project workspaces with member access control
-- Command palette (Ctrl+K)
-- Standard snippet envelope encryption (AES-256-GCM server-side)
-- Sensitive snippet client-side encryption (libsodium sealed box)
-- Expiry policy for short-lived secret snippets
-- Security event log, rate limiting, request validation
-- Encrypted backup and restore
+- Visibility control: Private / Project / Shared
+- Command palette (Ctrl+K) — search snippets, projects, tags, and run actions
+- Copy to clipboard with one click; 2-second confirmation flash
 
-**RAG Search Assistant (v2.0.0 — 2025)**
-- Natural-language questions over your snippet knowledge base
-- Hybrid retrieval: BM25 + vector similarity with reranking
-- Citation-first answers — every answer cites source snippets
-- Encrypted sensitive snippets excluded from indexing by default
+### Encryption model
+Two modes — choose per snippet:
+
+| Mode | Storage | Searchable | AI features |
+|------|---------|-----------|-------------|
+| **Standard** | Plaintext — access controlled by visibility | ✓ | ✓ |
+| **Sensitive** | Client-side encrypted (libsodium sealed box) before upload | ✗ | ✗ |
+
+Sensitive mode: your private key is generated in the browser, encrypted with your passphrase, and stored in `localStorage`. The server stores ciphertext only and cannot decrypt. Unlock sessions expire after 15 minutes of inactivity. Clipboard auto-clears after 45 seconds when copying sensitive content.
+
+### Security
+- Rate limiting on auth and sensitive endpoints (express-rate-limit)
+- Request validation with Zod on all write routes
+- Security event log — every decrypt, share, export, and revoke action is recorded
+- Sensitive snippet expiry — set a date/time after which the snippet is hidden and moved to the Expired tab
+- Encrypted backup / restore — AES-256-GCM with a user-supplied passphrase (server never sees the passphrase)
+
+### RAG Search Assistant
+Ask natural-language questions across your snippet knowledge base:
+- Hybrid retrieval: BM25 keyword match (SQLite FTS5) + vector similarity (local embeddings via `@xenova/transformers`)
+- Citation-first — answers that don't cite a source snippet are blocked from rendering
+- Inline `[snippet:N]` references in answers are clickable chips — click to open a preview popup
+- Source chips at the bottom open a full snippet preview without navigating away
 - Prompt-injection defenses on all retrieval paths
+- Sensitive encrypted snippets excluded from indexing
 
-**Local Ollama Copilot (v2.0.0 — 2025)**
-- Explain, summarize, refactor-draft actions on any snippet
-- Local inference only — no cloud model required
-- Streaming responses with cancel and copy controls
-- Secret redaction filter on all streamed tokens
-- Approved model allowlist: qwen2.5-coder, llama3.1, mistral
+**Indexing is automatic** — snippets are indexed in the background whenever you create or edit them. No manual `npm run index` needed (though it still works as a one-time backfill for existing snippets).
 
-## RAG Setup
+### Local Ollama AI assistant
+Per-snippet actions on the detail page:
 
-Index your snippets after setup:
-```bash
-npm run index
-```
+| Action | Description |
+|--------|-------------|
+| **Explain** | Plain-English explanation of what the code does |
+| **Summarize** | 2–3 sentence summary |
+| **Refactor draft** | One suggested improvement — extract the code and apply it with one click |
+| **Convert to language** | Converts code to a selected target language; refuses clearly if the conversion isn't feasible (e.g. browser-only APIs) |
 
-Re-run after adding snippets or changing content.
+All actions stream responses in a popup with:
+- Rendered markdown with syntax-highlighted code blocks
+- Language label + **Copy** button on every code block
+- For Refactor: **⬇ Apply & Save** button — applies the extracted code and saves the snippet
+- For Convert: **＋ Save as new snippet** button — auto-generates a title via AI Suggest, then creates a new private snippet in the target language
 
-Sensitive (encrypted) snippets are excluded from the index unless you
-give explicit per-request consent from the UI.
+**AI Suggest** (in the snippet editor): click **✦ AI Suggest** next to the description field — Ollama reads your current code and fills in a proper title and description to improve RAG indexing.
+
+### UI
+- Space Grotesk font + JetBrains Mono for code
+- Dark-only mode with orange accent (`#ff6b00`) on `#0d1117` base
+- Subtle dot grid background pattern
+- Glass morphism cards with hover glow
+- Lucide icons throughout (consistent single-color)
+- Toast notifications for all actions
+- Custom confirm modals — no browser `confirm()` dialogs
+- Snippet preview popup — click any RAG citation to see title, description, code preview, and navigate to full view
+
+---
 
 ## Ollama Setup
 
-Install Ollama and pull a model:
+Install Ollama, then pull a model:
+
 ```bash
-ollama pull qwen2.5-coder
+ollama pull qwen3-coder:30b
 ```
 
-The assistant panel detects Ollama availability on load. Set `OLLAMA_HOST`
-and `OLLAMA_PORT` if Ollama runs on a different machine.
+The assistant panel detects Ollama availability on load. Change the default model in `.env`:
 
-## Security Notes
+```
+OLLAMA_DEFAULT_MODEL=qwen3-coder:30b
+RAG_MODEL=qwen3-coder:30b
+```
 
-- Sensitive snippet plaintext never leaves the browser
-- Private keys never sent to the server
-- Passphrase-locked private key stored encrypted in localStorage
-- Unlock sessions clear after 15 minutes of inactivity
-- Rate limiting on auth and sensitive endpoints
-- Security events logged for decrypt, share, export, and revoke
-- RAG answers blocked if no valid citation anchors are present
-- Ollama requests restricted to approved model list
+Approved models: `qwen3-coder:30b`, `qwen2.5-coder`, `qwen2.5-coder:7b`, `llama3.1`, `llama3.1:8b`, `mistral`.
+
+---
 
 ## Backup and Recovery
 
-Export (standard snippets only, encrypted):
+Export (standard snippets, encrypted with your passphrase):
 ```
 GET /api/backup/export?passphrase=<passphrase>
 ```
@@ -116,20 +164,30 @@ GET /api/backup/export?passphrase=<passphrase>
 Restore:
 ```
 POST /api/backup/restore?passphrase=<passphrase>
+Content-Type: text/plain
+Body: <contents of .enc file>
 ```
 
-## Health
+---
+
+## Health Endpoints
 
 ```
-GET /health   — process alive
-GET /ready    — DB connectivity
+GET /health   — process uptime
+GET /ready    — DB connectivity check
 ```
 
-## Testing
+---
 
-```bash
-npm test
-```
+## Security Notes
+
+- Sensitive snippet plaintext is never transmitted to the server
+- Private keys are never sent over the network
+- Passphrase-derived key used to encrypt the private key locally (libsodium `pwhash`)
+- All AI actions reject sensitive snippets to prevent plaintext exposure
+- RAG answers require at least one valid citation anchor — uncited responses are blocked
+- Streamed AI tokens pass through a secret-redaction filter before reaching the UI
+- Ollama model selection restricted to an approved allowlist
 
 ---
 

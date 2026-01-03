@@ -5,13 +5,14 @@ import { useToast } from '../context/ToastContext';
 import SnippetCard from '../components/SnippetCard';
 import Header from '../components/Header';
 import RagPanel from '../components/RagPanel';
+import ConfirmModal from '../components/ConfirmModal';
 import styles from './Vault.module.css';
 
 const LANG_META = [
   { id: 'javascript', label: 'JS',   color: '#f5a623' },
   { id: 'typescript', label: 'TS',   color: '#38bdf8' },
   { id: 'python',     label: 'PY',   color: '#10d98a' },
-  { id: 'bash',       label: 'SH',   color: '#a78bfa' },
+  { id: 'bash',       label: 'Bash', color: '#a78bfa' },
   { id: 'sql',        label: 'SQL',  color: '#c084fc' },
   { id: 'json',       label: 'JSON', color: '#6b7a8d' },
   { id: 'yaml',       label: 'YML',  color: '#6b7a8d' },
@@ -19,7 +20,7 @@ const LANG_META = [
   { id: 'css',        label: 'CSS',  color: '#67e8f9' },
   { id: 'go',         label: 'GO',   color: '#00d4e8' },
   { id: 'rust',       label: 'RS',   color: '#fb923c' },
-  { id: 'java',       label: 'JV',   color: '#f87171' },
+  { id: 'java',       label: 'Java', color: '#f87171' },
   { id: 'csharp',     label: 'C#',   color: '#818cf8' },
   { id: 'cpp',        label: 'C++',  color: '#f43f5e' },
   { id: 'markdown',   label: 'MD',   color: '#4a5568' },
@@ -36,6 +37,7 @@ export default function Vault() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [selectedTag, setSelectedTag] = useState('');
   const [showRag, setShowRag] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -68,7 +70,12 @@ export default function Vault() {
   useEffect(() => { load(); }, [load]);
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this snippet?')) return;
+    setConfirmDelete(id);
+  };
+
+  const confirmDoDelete = async () => {
+    const id = confirmDelete;
+    setConfirmDelete(null);
     try {
       await api.del(`/snippets/${id}`);
       setSnippets(prev => prev.filter(s => s.id !== id));
@@ -78,6 +85,16 @@ export default function Vault() {
 
   return (
     <div className={styles.shell}>
+      {confirmDelete && (
+        <ConfirmModal
+          title="Delete snippet?"
+          message="This will permanently remove the snippet and all its versions. There's no undo."
+          confirmLabel="Delete"
+          danger
+          onConfirm={confirmDoDelete}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
       <aside className={styles.sidebar}>
         <div className={styles.sideSection}>
           <p className={styles.sideLabel}>Language</p>

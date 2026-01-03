@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -61,6 +61,26 @@ function AppRoutes() {
 }
 
 export default function App() {
+  useEffect(() => {
+    const handler = async (e) => {
+      const btn = e.target.closest('.md-code-copy');
+      if (!btn) return;
+      const code = btn.closest('.md-code-block')?.querySelector('pre code');
+      if (!code) return;
+      try {
+        await navigator.clipboard.writeText(code.textContent);
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+      } catch {
+        btn.textContent = 'Failed';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      }
+    };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, []);
+
   return (
     <ThemeProvider>
       <AuthProvider>
