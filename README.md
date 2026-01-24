@@ -6,8 +6,8 @@ Self-hosted, local-first code snippet manager for developer teams. Store, tag, s
 
 ## Requirements
 
-- Node.js 20+
-- npm 10+
+- Node.js 24+ (see `.nvmrc`)
+- npm 11+
 - [Ollama](https://ollama.ai) — for AI features (optional)
 
 ---
@@ -15,11 +15,8 @@ Self-hosted, local-first code snippet manager for developer teams. Store, tag, s
 ## Install
 
 ```bash
-# Server dependencies
+# server and client are npm workspaces, one install does both
 npm install
-
-# Client dependencies
-npm install --prefix client
 
 # Configure environment
 cp .env.example .env

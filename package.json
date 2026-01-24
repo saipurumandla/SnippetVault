@@ -2,35 +2,22 @@
   "name": "snippetvault",
   "license": "MIT",
   "version": "0.1.0",
-  "scripts": {
-    "start": "node server/app.js",
-    "dev": "concurrently \"node server/app.js\" \"npm run dev --prefix client\"",
-    "index": "node server/rag/indexAll.js",
-    "test": "jest --testPathPattern=server"
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "engines": {
+    "node": ">=24"
   },
-  "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^11.0.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.0.0",
-    "express": "^4.17.3",
-    "express-rate-limit": "^6.5.1",
-    "helmet": "^6.0.0",
-    "@langchain/core": "^0.2.36",
-    "@langchain/openai": "^0.2.11",
-    "@xenova/transformers": "^2.17.2",
-    "langchain": "^0.2.20",
-    "pino": "^8.6.1",
-    "zod": "^3.17.3",
-    "jsonwebtoken": "^8.5.1"
+  "scripts": {
+    "dev": "concurrently -n server,client \"npm run dev -w server\" \"npm run dev -w client\"",
+    "start": "npm start -w server",
+    "build": "npm run build -w client",
+    "index": "npm run index -w server",
+    "test": "npm test -w server"
   },
   "devDependencies": {
-    "concurrently": "^7.0.0",
-    "jest": "^27.5.1",
-    "supertest": "^6.2.2"
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "testPathPattern": "server/tests"
+    "concurrently": "^7.0.0"
   }
 }
