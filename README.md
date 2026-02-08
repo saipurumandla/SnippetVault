@@ -46,6 +46,19 @@ Open **http://localhost:5173** in your browser.
 
 ---
 
+## Database
+
+SQLite file at `data/vault.db`. Schema changes are numbered SQL files in
+`server/migrations/`. They run automatic when the server starts, or by hand:
+
+```bash
+npm run migrate
+```
+
+Never edit a migration after it is merged, add a new one.
+
+---
+
 ## Configuration
 
 | Variable              | Default              | Description                                  |
