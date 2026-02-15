@@ -1,5 +1,5 @@
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+require('dotenv').config({ path: path.join(__dirname, '../.env'), quiet: true });
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -13,7 +13,7 @@ app.use(express.json());
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  limit: 20,
   message: { error: 'Too many requests, try again later' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -21,7 +21,7 @@ const authLimiter = rateLimit({
 
 const sensitiveLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 30,
+  limit: 30,
   message: { error: 'Rate limit exceeded' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -47,7 +47,12 @@ app.get('/api/ping', (req, res) => {
   res.json({ ok: true });
 });
 
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
+
 app.use((err, req, res, next) => {
+  if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Invalid JSON body' });
   console.error(err.stack);
   res.status(500).json({ error: 'Internal server error' });
 });

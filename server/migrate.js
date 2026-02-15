@@ -30,7 +30,7 @@ function migrate(db, dir = MIGRATIONS_DIR) {
 module.exports = { migrate, MIGRATIONS_DIR };
 
 if (require.main === module) {
-  require('dotenv').config({ path: path.join(__dirname, '../.env') });
+  require('dotenv').config({ path: path.join(__dirname, '../.env'), quiet: true });
   const Database = require('better-sqlite3');
   const dbPath = process.env.DB_PATH || path.join(__dirname, '../data/vault.db');
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });

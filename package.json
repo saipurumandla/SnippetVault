@@ -19,6 +19,6 @@
     "test": "npm test -w server"
   },
   "devDependencies": {
-    "concurrently": "^7.0.0"
+    "concurrently": "^9.2.1"
   }
 }
