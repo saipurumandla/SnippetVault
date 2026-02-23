@@ -3,10 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Database from 'better-sqlite3';
-import { createRequire } from 'node:module';
-
-const require = createRequire(import.meta.url);
-const { migrate, MIGRATIONS_DIR } = require('../migrate.js');
+import { migrate, MIGRATIONS_DIR } from '../src/migrate.ts';
 
 function tmpDir(files) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sv-mig-'));

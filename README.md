@@ -38,8 +38,9 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ## Running
 
 ```bash
-npm run dev        # server :3001 + Vite client :5173
-npm start          # server only (production)
+npm run dev        # server :3001 (tsx watch) + Vite client :5173
+npm run build      # tsc for server, vite build for client
+npm start          # server from server/dist (run build first)
 ```
 
 Open **http://localhost:5173** in your browser.

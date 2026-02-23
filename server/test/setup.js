@@ -1,6 +1,4 @@
-import { createRequire } from 'node:module';
-
-const require = createRequire(import.meta.url);
+import { vi } from 'vitest';
 
 process.env.DB_PATH = ':memory:';
 process.env.JWT_SECRET = 'test-secret';
@@ -18,10 +16,4 @@ function fakeEmbed(text) {
   return v.map(x => x / norm);
 }
 
-const embedderPath = require.resolve('../rag/embedder.js');
-require.cache[embedderPath] = {
-  id: embedderPath,
-  filename: embedderPath,
-  loaded: true,
-  exports: { embed: async (text) => fakeEmbed(text) },
-};
+vi.mock('../src/rag/embedder.js', () => ({ embed: async (text) => fakeEmbed(text) }));
