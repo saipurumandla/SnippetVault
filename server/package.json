@@ -10,7 +10,7 @@
     "start": "node dist/app.js",
     "typecheck": "tsc --noEmit",
     "migrate": "tsx src/migrate.ts",
-    "index": "tsx src/rag/indexAll.js",
+    "index": "tsx src/rag/indexAll.ts",
     "test": "vitest run"
   },
   "dependencies": {

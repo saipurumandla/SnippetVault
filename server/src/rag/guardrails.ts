@@ -1,3 +1,10 @@
+import type { SnippetRow } from '../types.js';
+
+export interface GuardResult {
+  blocked: boolean;
+  reason?: string;
+}
+
 const INJECTION_PATTERNS = [
   /ignore\s+(previous|all|above)\s+instructions/i,
   /you\s+are\s+now\s+(an?\s+)?(admin|root|system)/i,
@@ -14,7 +21,7 @@ const SECRET_PATTERNS = [
   /\b([a-f0-9]{64})\b/g,
 ];
 
-function checkPromptInjection(text) {
+export function checkPromptInjection(text: string): GuardResult {
   for (const pattern of INJECTION_PATTERNS) {
     if (pattern.test(text)) {
       return { blocked: true, reason: 'Prompt injection pattern detected' };
@@ -23,7 +30,7 @@ function checkPromptInjection(text) {
   return { blocked: false };
 }
 
-function redactSecrets(text) {
+export function redactSecrets(text: string): string {
   let redacted = text;
   for (const pattern of SECRET_PATTERNS) {
     redacted = redacted.replace(pattern, '<REDACTED>');
@@ -31,11 +38,10 @@ function redactSecrets(text) {
   return redacted;
 }
 
-function checkSensitiveAccess(snippet, userConsented) {
+export function checkSensitiveAccess(snippet: Pick<SnippetRow, 'encryption_mode'>, userConsented: boolean): GuardResult {
   if (snippet.encryption_mode === 'sensitive' && !userConsented) {
     return { blocked: true, reason: 'Sensitive snippet excluded — explicit consent required' };
   }
   return { blocked: false };
 }
 
-export { checkPromptInjection, redactSecrets, checkSensitiveAccess };

@@ -1,4 +1,9 @@
-function explainPrompt(snippet, ragContext) {
+import type { SnippetRow } from '../types.js';
+import type { RetrievedChunk } from '../rag/retriever.js';
+
+type PromptSnippet = Pick<SnippetRow, 'title' | 'language' | 'code'>;
+
+export function explainPrompt(snippet: PromptSnippet, ragContext: RetrievedChunk[]): string {
   const ctx = ragContext && ragContext.length > 0
     ? `\nRelated context from your vault:\n${ragContext.map(c => `[snippet:${c.snippet_id}] ${c.text}`).join('\n---\n')}`
     : '';
@@ -13,7 +18,7 @@ ${snippet.code}
 Explanation:`;
 }
 
-function summarizePrompt(snippet, ragContext) {
+export function summarizePrompt(snippet: PromptSnippet, ragContext: RetrievedChunk[]): string {
   const ctx = ragContext && ragContext.length > 0
     ? `\nRelated context:\n${ragContext.map(c => `[snippet:${c.snippet_id}] ${c.text}`).join('\n---\n')}`
     : '';
@@ -27,7 +32,7 @@ ${snippet.code}
 Summary:`;
 }
 
-function refactorPrompt(snippet) {
+export function refactorPrompt(snippet: PromptSnippet): string {
   return `Suggest one specific refactoring improvement for this code. Show only the changed section, not the full file. Briefly explain why.
 
 ${snippet.title} (${snippet.language})
@@ -38,7 +43,7 @@ ${snippet.code}
 Refactoring suggestion:`;
 }
 
-function convertPrompt(snippet, targetLanguage) {
+export function convertPrompt(snippet: PromptSnippet, targetLanguage: string): string {
   return `You are a code conversion assistant. Your job is to convert code between languages — but ONLY when the conversion is genuinely feasible.
 
 ## BEFORE converting, check these rules:
@@ -66,7 +71,7 @@ ${snippet.code}
 Convert to ${targetLanguage}:`;
 }
 
-function suggestPrompt(code, language) {
+export function suggestPrompt(code: string, language?: string): string {
   return `You are a code documentation assistant. Analyze this ${language || 'code'} snippet and respond with ONLY a valid JSON object — no markdown, no explanation, just the JSON.
 
 \`\`\`${language || ''}
@@ -80,4 +85,3 @@ Respond with exactly this structure:
 }`;
 }
 
-export { explainPrompt, summarizePrompt, refactorPrompt, suggestPrompt, convertPrompt };

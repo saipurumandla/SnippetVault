@@ -108,3 +108,22 @@ describe('snippets', () => {
     expect(mine).toEqual(['still good']);
   });
 });
+
+describe('snippet expiry on create', () => {
+  it('saves expires_at given at create time', async () => {
+    const u = await newUser();
+    const past = await newSnippet(u, { title: 'expired on create', expires_at: '2020-01-01T00:00:00Z' });
+    expect(past.expires_at).toBe('2020-01-01T00:00:00Z');
+    const res = await request(app).get('/api/snippets').set('Authorization', u.auth);
+    expect(res.body.find(s => s.id === past.id)).toBeUndefined();
+    const expired = await request(app).get('/api/expired').set('Authorization', u.auth);
+    expect(expired.body.map(s => s.id)).toEqual([past.id]);
+  });
+
+  it('rejects a bad date', async () => {
+    const u = await newUser();
+    const res = await request(app).post('/api/snippets').set('Authorization', u.auth)
+      .send({ title: 't', code: 'x', language: 'js', expires_at: 'next tuesday' });
+    expect(res.status).toBe(400);
+  });
+});

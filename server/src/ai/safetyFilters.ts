@@ -15,7 +15,7 @@ const INJECTION_PATTERNS = [
   /jailbreak/i,
 ];
 
-function redactSecrets(text) {
+export function redactSecrets(text: string): string {
   let result = text;
   for (const { pattern, label } of SECRET_PATTERNS) {
     result = result.replace(pattern, `<${label.toUpperCase()}>`);
@@ -23,15 +23,14 @@ function redactSecrets(text) {
   return result;
 }
 
-function containsInjection(text) {
+export function containsInjection(text: string): boolean {
   for (const pattern of INJECTION_PATTERNS) {
     if (pattern.test(text)) return true;
   }
   return false;
 }
 
-function filterToken(token) {
+export function filterToken(token: string): string {
   return redactSecrets(token);
 }
 
-export { redactSecrets, containsInjection, filterToken };

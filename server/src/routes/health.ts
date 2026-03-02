@@ -12,7 +12,7 @@ router.get('/ready', (req, res) => {
     db.prepare('SELECT 1').get();
     res.json({ status: 'ready' });
   } catch (err) {
-    res.status(503).json({ status: 'not ready', error: err.message });
+    res.status(503).json({ status: 'not ready', error: (err as Error).message });
   }
 });
 

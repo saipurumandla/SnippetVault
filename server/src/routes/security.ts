@@ -10,7 +10,7 @@ router.get('/events', auth, (req, res) => {
     WHERE user_id = ?
     ORDER BY created_at DESC
     LIMIT 200
-  `).all(req.user.id);
+  `).all(req.user!.id);
   res.json(events);
 });
 
