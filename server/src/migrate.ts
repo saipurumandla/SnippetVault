@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import Database from 'better-sqlite3';
+import type Database from 'better-sqlite3';
 import { config, isMain } from './config.js';
 
 export const MIGRATIONS_DIR = path.join(import.meta.dirname, '../migrations');
@@ -31,9 +31,7 @@ export function migrate(db: Database.Database, dir = MIGRATIONS_DIR): string[] {
 }
 
 if (isMain(import.meta.url)) {
-  fs.mkdirSync(path.dirname(config.dbPath), { recursive: true });
-  const db = new Database(config.dbPath);
-  db.pragma('foreign_keys = ON');
-  const applied = migrate(db);
+  const { openDb } = await import('./sqlite.js');
+  const applied = migrate(openDb(config.dbPath));
   console.log(applied.length ? `applied: ${applied.join(', ')}` : 'nothing to apply');
 }

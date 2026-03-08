@@ -2,7 +2,7 @@ import express from 'express';
 import db from '../db.js';
 import auth from '../middleware/authMiddleware.js';
 import { snippetSchema, validate, type SnippetInput } from '../validation.js';
-import { indexSnippet } from '../rag/indexer.js';
+import { indexSnippet, removeFromIndex } from '../rag/indexer.js';
 import { embed } from '../rag/embedder.js';
 import type { SnippetRow } from '../types.js';
 
@@ -151,7 +151,7 @@ router.delete('/:id', auth, (req, res) => {
     res.status(404).json({ error: 'Not found' });
     return;
   }
-  db.prepare('DELETE FROM rag_chunks WHERE snippet_id = ?').run(snippet.id);
+  removeFromIndex(snippet.id);
   db.prepare('DELETE FROM snippet_tags WHERE snippet_id = ?').run(snippet.id);
   db.prepare('DELETE FROM snippet_versions WHERE snippet_id = ?').run(snippet.id);
   db.prepare('DELETE FROM snippets WHERE id = ?').run(snippet.id);

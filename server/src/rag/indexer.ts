@@ -23,34 +23,38 @@ function buildIndexText(snippet: SnippetRow): string {
   return parts.join('\n');
 }
 
+export function removeFromIndex(snippetId: number): void {
+  // vec0 is virtual table, foreign key cascade dont reach it
+  db.prepare('DELETE FROM rag_vec WHERE chunk_id IN (SELECT id FROM rag_chunks WHERE snippet_id = ?)').run(snippetId);
+  db.prepare('DELETE FROM rag_chunks WHERE snippet_id = ?').run(snippetId);
+}
+
 export async function indexSnippet(snippet: SnippetRow, embedFn: EmbedFn): Promise<void> {
   if (snippet.encryption_mode === 'sensitive') return;
 
-  db.prepare('DELETE FROM rag_chunks WHERE snippet_id = ?').run(snippet.id);
-
   const chunks = chunkText(buildIndexText(snippet));
+  const vectors = await Promise.all(chunks.map(c => embedFn(c)));
   const now = new Date().toISOString();
   const insertChunk = db.prepare(`
     INSERT INTO rag_chunks (snippet_id, project_id, chunk_index, text, indexed_at)
     VALUES (?, ?, ?, ?, ?)
   `);
-  const insertEmbedding = db.prepare(`
-    INSERT OR REPLACE INTO rag_embeddings (chunk_id, embedding, model, dims)
-    VALUES (?, ?, ?, ?)
-  `);
+  const insertVec = db.prepare('INSERT INTO rag_vec (chunk_id, embedding) VALUES (?, ?)');
 
-  for (let i = 0; i < chunks.length; i++) {
-    const chunk = chunks[i] as string;
-    const result = insertChunk.run(snippet.id, snippet.project_id || null, i, chunk, now);
-    const embedding = await embedFn(chunk);
-    const embBuf = Buffer.from(new Float32Array(embedding).buffer);
-    insertEmbedding.run(result.lastInsertRowid, embBuf, 'xenova/all-MiniLM-L6-v2', embedding.length);
-  }
+  db.transaction(() => {
+    removeFromIndex(snippet.id);
+    chunks.forEach((chunk, i) => {
+      const { lastInsertRowid } = insertChunk.run(snippet.id, snippet.project_id || null, i, chunk, now);
+      // sqlite-vec want integer rowid, plain js number bind as real
+      insertVec.run(BigInt(lastInsertRowid), Buffer.from(new Float32Array(vectors[i] as number[]).buffer));
+    });
+  })();
 }
 
-export async function indexAllPlaintext(embedFn: EmbedFn): Promise<void> {
+export async function indexAllPlaintext(embedFn: EmbedFn): Promise<number> {
   const snippets = db.prepare("SELECT * FROM snippets WHERE encryption_mode = 'standard'").all() as SnippetRow[];
   for (const s of snippets) {
     await indexSnippet(s, embedFn);
   }
+  return snippets.length;
 }

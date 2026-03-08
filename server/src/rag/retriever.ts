@@ -18,24 +18,9 @@ export interface RetrievedChunk {
   finalScore?: number;
 }
 
-interface VectorRow extends RetrievedChunk {
-  embedding: Buffer;
-}
-
 export interface RetrieveResult {
   chunks: RetrievedChunk[];
   lowConfidence: boolean;
-}
-
-function cosineSimilarity(a: ArrayLike<number>, b: ArrayLike<number>): number {
-  let dot = 0, normA = 0, normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    const x = a[i] as number, y = b[i] as number;
-    dot += x * y;
-    normA += x * x;
-    normB += y * y;
-  }
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
 const ACCESS_FILTER = `(s.author_id = ? OR s.visibility = 'shared'
@@ -65,28 +50,30 @@ function bm25Search(query: string, userId: number, projectId: number | null): Re
   `).all(...params) as RetrievedChunk[];
 }
 
+const KNN_CANDIDATES = 50;
+
 function vectorSearch(queryEmbedding: number[], userId: number, projectId: number | null): RetrievedChunk[] {
-  const params: number[] = [userId, userId];
+  const params: (Buffer | number)[] = [Buffer.from(new Float32Array(queryEmbedding).buffer), KNN_CANDIDATES, userId, userId];
   let filter = '';
   if (projectId) { filter = ' AND s.project_id = ?'; params.push(projectId); }
 
+  // knn first, then access filter, so ask more candidates than TOP_K
   const rows = db.prepare(`
+    WITH knn AS (
+      SELECT chunk_id, distance FROM rag_vec WHERE embedding MATCH ? AND k = ?
+    )
     SELECT rc.id as chunk_id, rc.snippet_id, rc.text, rc.chunk_index, rc.project_id,
-           s.title, s.language, re.embedding
-    FROM rag_chunks rc
+           s.title, s.language, knn.distance
+    FROM knn
+    JOIN rag_chunks rc ON rc.id = knn.chunk_id
     JOIN snippets s ON s.id = rc.snippet_id
-    JOIN rag_embeddings re ON re.chunk_id = rc.id
     WHERE ${ACCESS_FILTER}
     ${filter}
-  `).all(...params) as VectorRow[];
+    ORDER BY knn.distance
+    LIMIT ${TOP_K}
+  `).all(...params) as (RetrievedChunk & { distance: number })[];
 
-  return rows
-    .map(({ embedding, ...r }) => {
-      const stored = new Float32Array(embedding.buffer, embedding.byteOffset, embedding.byteLength / 4);
-      return { ...r, score: cosineSimilarity(queryEmbedding, stored) };
-    })
-    .sort((a, b) => b.score - a.score)
-    .slice(0, TOP_K);
+  return rows.map(({ distance, ...r }) => ({ ...r, score: 1 - distance }));
 }
 
 export async function retrieve(query: string, userId: number, projectId: number | null = null): Promise<RetrieveResult> {

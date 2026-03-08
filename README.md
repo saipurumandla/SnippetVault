@@ -58,6 +58,13 @@ npm run migrate
 
 Never edit a migration after it is merged, add a new one.
 
+Vector search use [sqlite-vec](https://github.com/asg017/sqlite-vec) inside the same
+SQLite file, no extra service. To rebuild the search index from all snippets:
+
+```bash
+npm run index
+```
+
 ---
 
 ## Configuration

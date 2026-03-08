@@ -1,6 +1,7 @@
 import express from 'express';
 import db from '../db.js';
 import auth from '../middleware/authMiddleware.js';
+import { removeFromIndex } from '../rag/indexer.js';
 import type { SnippetRow } from '../types.js';
 
 const router = express.Router();
@@ -31,6 +32,7 @@ router.delete('/:id', auth, (req, res) => {
     res.status(404).json({ error: 'Not found' });
     return;
   }
+  removeFromIndex(snippet.id);
   db.prepare('DELETE FROM snippet_tags WHERE snippet_id = ?').run(snippet.id);
   db.prepare('DELETE FROM snippet_versions WHERE snippet_id = ?').run(snippet.id);
   db.prepare('DELETE FROM snippets WHERE id = ?').run(snippet.id);
