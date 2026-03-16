@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import styles from './SnippetCard.module.css';

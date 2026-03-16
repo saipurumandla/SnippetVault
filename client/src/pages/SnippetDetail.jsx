@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 import Editor from '@monaco-editor/react';
 import { api } from '../lib/api';
 import { decryptFromSender } from '../lib/crypto';

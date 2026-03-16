@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router';
 import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import SnippetCard from '../components/SnippetCard';
