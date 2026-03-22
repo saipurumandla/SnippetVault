@@ -16,7 +16,7 @@
     "build": "npm run build -w server && npm run build -w client",
     "migrate": "npm run migrate -w server",
     "index": "npm run index -w server",
-    "test": "npm test -w server"
+    "test": "npm test -w server && npm test -w client"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
