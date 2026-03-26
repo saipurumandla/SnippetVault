@@ -59,8 +59,8 @@ export default function ProjectsPage() {
         {showCreate && (
           <form className={styles.createForm} onSubmit={handleCreate}>
             <h2 className={styles.formTitle}>Create project</h2>
-            <input className="input-glass" placeholder="Project name" value={name} onChange={e => setName(e.target.value)} required />
-            <input className="input-glass" placeholder="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} />
+            <input className="input" placeholder="Project name" value={name} onChange={e => setName(e.target.value)} required />
+            <input className="input" placeholder="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} />
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="submit" className="btn-primary">Create</button>
               <button type="button" className="btn-ghost" onClick={() => setShowCreate(false)}>Cancel</button>
@@ -78,16 +78,16 @@ export default function ProjectsPage() {
         ) : (
           <div className={styles.grid}>
             {projects.map(p => (
-              <div key={p.id} className={`glass-card ${styles.card}`}>
+              <div key={p.id} className={`panel ${styles.card}`}>
                 <div className={styles.cardHeader}>
                   <span className={styles.cardName}>{p.name}</span>
-                  <span className="badge badge-indigo">Project</span>
+                  <span className="badge">Project</span>
                 </div>
                 {p.description && <p className={styles.cardDesc}>{p.description}</p>}
                 <p className={styles.cardMeta}>Created {new Date(p.created_at).toLocaleDateString()}</p>
                 <form className={styles.memberForm} onSubmit={e => handleAddMember(p.id, e)}>
                   <input
-                    className="input-glass"
+                    className="input"
                     placeholder="Add member by email"
                     value={memberEmail[p.id] || ''}
                     onChange={e => setMemberEmail(prev => ({ ...prev, [p.id]: e.target.value }))}

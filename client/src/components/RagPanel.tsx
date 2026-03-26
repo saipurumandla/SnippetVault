@@ -64,12 +64,12 @@ export default function RagPanel() {
         <div className={styles.header}>
           <span className={styles.icon}>✦</span>
           <span className={styles.title}>Ask about your snippets</span>
-          <span className="badge badge-amber" style={{ marginLeft: 'auto' }}>RAG · Local Ollama</span>
+          <span className="badge badge-sensitive" style={{ marginLeft: 'auto' }}>RAG · Local Ollama</span>
         </div>
 
         <form className={styles.form} onSubmit={handleAsk}>
           <input
-            className="input-glass"
+            className="input"
             placeholder="e.g. How do I format a date? What snippets use async/await?"
             value={question}
             onChange={e => setQuestion(e.target.value)}

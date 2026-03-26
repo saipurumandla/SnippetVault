@@ -45,12 +45,12 @@ export default function SnippetPreviewModal({ snippetId, onClose }: Props) {
             <div className={styles.meta}>
               <h2 className={styles.title}>{snippet.title}</h2>
               <div className={styles.badges}>
-                <span className={`badge badge-indigo`}>{snippet.language}</span>
-                <span className={`badge ${snippet.visibility === 'private' ? 'badge-rose' : snippet.visibility === 'project' ? 'badge-sky' : 'badge-emerald'}`}>
+                <span className={`badge`}>{snippet.language}</span>
+                <span className={`badge ${snippet.visibility === 'private' ? 'badge-danger' : snippet.visibility === 'project' ? 'badge' : 'badge-ok'}`}>
                   {snippet.visibility}
                 </span>
                 {snippet.encryption_mode === 'sensitive' && (
-                  <span className="badge badge-amber">🔒 sensitive</span>
+                  <span className="badge badge-sensitive">🔒 sensitive</span>
                 )}
               </div>
             </div>

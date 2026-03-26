@@ -200,9 +200,9 @@ export default function SnippetDetail() {
                 {snippet.title}
               </h1>
               <div className={styles.badges}>
-                {isSensitive && <span className="badge badge-amber">🔒 sensitive</span>}
-                <span className="badge badge-indigo">{snippet.language}</span>
-                <span className={`badge ${snippet.visibility === 'private' ? 'badge-rose' : snippet.visibility === 'project' ? 'badge-sky' : 'badge-emerald'}`}>
+                {isSensitive && <span className="badge badge-sensitive">🔒 sensitive</span>}
+                <span className="badge">{snippet.language}</span>
+                <span className={`badge ${snippet.visibility === 'private' ? 'badge-danger' : snippet.visibility === 'project' ? 'badge' : 'badge-ok'}`}>
                   {snippet.visibility}
                 </span>
               </div>
@@ -262,7 +262,7 @@ export default function SnippetDetail() {
 
           <aside className={styles.sidebar}>
             {ollamaAvailable && !isSensitive && (
-              <div className={`glass-card ${styles.aiCard}`}>
+              <div className={`panel ${styles.aiCard}`}>
                 <h3 className={styles.aiTitle}>
                   <span className={styles.aiIcon}>✦</span> AI Assistant
                 </h3>
@@ -283,7 +283,7 @@ export default function SnippetDetail() {
                   <p className={styles.convertLabel}>Convert to language</p>
                   <div className={styles.convertRow}>
                     <select
-                      className={`select-glass ${styles.convertSelect}`}
+                      className={`select ${styles.convertSelect}`}
                       value={convertLang}
                       onChange={e => setConvertLang(e.target.value)}
                     >
@@ -305,24 +305,24 @@ export default function SnippetDetail() {
             )}
 
             {ollamaAvailable && isSensitive && (
-              <div className={`glass-card ${styles.aiCard}`}>
+              <div className={`panel ${styles.aiCard}`}>
                 <h3 className={styles.aiTitle}>✦ AI Assistant</h3>
                 <p className={styles.aiNote}>AI is not available for sensitive snippets to protect your privacy.</p>
               </div>
             )}
 
             {!ollamaAvailable && (
-              <div className={`glass-card ${styles.aiCard}`}>
+              <div className={`panel ${styles.aiCard}`}>
                 <h3 className={styles.aiTitle}>✦ AI Assistant</h3>
                 <p className={styles.aiNote}>Ollama not detected. Start Ollama to enable explain, summarize, and refactor actions.</p>
               </div>
             )}
 
             {isSensitive && (
-              <div className={`glass-card ${styles.infoCard}`}>
+              <div className={`panel ${styles.infoCard}`}>
                 <h3 className={styles.infoTitle}>Security</h3>
                 <div className={styles.infoRow}>
-                  <span className="badge badge-amber">Zero-knowledge</span>
+                  <span className="badge badge-sensitive">Zero-knowledge</span>
                 </div>
                 <p className={styles.infoNote}>Encrypted in browser (libsodium sealed box). Server stores ciphertext only. Plaintext never transmitted.</p>
               </div>

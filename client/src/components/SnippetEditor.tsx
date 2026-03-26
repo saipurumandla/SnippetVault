@@ -141,14 +141,14 @@ export default function SnippetEditor() {
         <div className={styles.layout}>
           <div className={styles.form}>
             <input
-              className={`input-glass ${styles.titleInput}`}
+              className={`input ${styles.titleInput}`}
               placeholder="Snippet title…"
               value={title}
               onChange={e => setTitle(e.target.value)}
             />
             <div className={styles.descRow}>
               <input
-                className="input-glass"
+                className="input"
                 placeholder="Description (optional)"
                 value={description}
                 onChange={e => setDescription(e.target.value)}
@@ -168,13 +168,13 @@ export default function SnippetEditor() {
             <div className={styles.row}>
               <div className={styles.field}>
                 <label className={styles.label}>Language</label>
-                <select className={`select-glass ${styles.fullWidth}`} value={language} onChange={e => setLanguage(e.target.value)}>
+                <select className={`select ${styles.fullWidth}`} value={language} onChange={e => setLanguage(e.target.value)}>
                   {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
                 </select>
               </div>
               <div className={styles.field}>
                 <label className={styles.label}>Visibility</label>
-                <select className={`select-glass ${styles.fullWidth}`} value={visibility} onChange={e => setVisibility(e.target.value as Visibility)}>
+                <select className={`select ${styles.fullWidth}`} value={visibility} onChange={e => setVisibility(e.target.value as Visibility)}>
                   <option value="private">🔒 Private</option>
                   <option value="project">◈ Project</option>
                   <option value="shared">◌ Shared</option>
@@ -183,7 +183,7 @@ export default function SnippetEditor() {
               {projects.length > 0 && (
                 <div className={styles.field}>
                   <label className={styles.label}>Project</label>
-                  <select className={`select-glass ${styles.fullWidth}`} value={projectId} onChange={e => setProjectId(e.target.value)}>
+                  <select className={`select ${styles.fullWidth}`} value={projectId} onChange={e => setProjectId(e.target.value)}>
                     <option value="">No project</option>
                     {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
@@ -215,7 +215,7 @@ export default function SnippetEditor() {
                 <label className={styles.label}>Expiry (optional)</label>
                 <input
                   type="datetime-local"
-                  className="input-glass"
+                  className="input"
                   value={expiresAt}
                   onChange={e => setExpiresAt(e.target.value)}
                 />
@@ -255,22 +255,22 @@ export default function SnippetEditor() {
           </div>
 
           <aside className={styles.hints}>
-            <div className={`glass-card ${styles.hintCard}`}>
+            <div className={`panel ${styles.hintCard}`}>
               <h3 className={styles.hintTitle}>Mode</h3>
               <div className={styles.hintRow}>
-                <span className="badge badge-teal">Standard</span>
+                <span className="badge">Standard</span>
                 <p className={styles.hintText}>Stored as plaintext. Access controlled by visibility. Searchable and AI-ready.</p>
               </div>
               <div className={styles.hintRow}>
-                <span className="badge badge-amber">Sensitive</span>
+                <span className="badge badge-sensitive">Sensitive</span>
                 <p className={styles.hintText}>Encrypted in your browser before upload. Server never sees plaintext. Not indexed, no AI.</p>
               </div>
             </div>
-            <div className={`glass-card ${styles.hintCard}`}>
+            <div className={`panel ${styles.hintCard}`}>
               <h3 className={styles.hintTitle}>Visibility</h3>
-              <div className={styles.hintRow}><span className="badge badge-indigo">Private</span><p className={styles.hintText}>Only you</p></div>
-              <div className={styles.hintRow}><span className="badge badge-sky">Project</span><p className={styles.hintText}>Project members only</p></div>
-              <div className={styles.hintRow}><span className="badge badge-emerald">Shared</span><p className={styles.hintText}>All logged-in users</p></div>
+              <div className={styles.hintRow}><span className="badge">Private</span><p className={styles.hintText}>Only you</p></div>
+              <div className={styles.hintRow}><span className="badge">Project</span><p className={styles.hintText}>Project members only</p></div>
+              <div className={styles.hintRow}><span className="badge badge-ok">Shared</span><p className={styles.hintText}>All logged-in users</p></div>
             </div>
           </aside>
         </div>

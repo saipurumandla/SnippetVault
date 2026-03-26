@@ -60,7 +60,7 @@ export default function SnippetCard({ snippet, onDelete }: Props) {
             {snippet.language}
           </span>
           {isSensitive && (
-            <span className="badge badge-amber">🔒 sensitive</span>
+            <span className="badge badge-sensitive">🔒 sensitive</span>
           )}
         </div>
       </div>

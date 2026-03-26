@@ -22,7 +22,7 @@ export default function NavSidebar() {
   return (
     <nav className={styles.nav}>
       <div className={styles.logo} onClick={() => navigate('/vault')}>
-        <Archive size={20} className={styles.logoIconSvg} />
+        <Archive size={18} className={styles.logoIconSvg} />
         <span className={styles.logoText}>SnippetVault</span>
       </div>
       <div className={styles.links}>
@@ -32,17 +32,22 @@ export default function NavSidebar() {
             to={to}
             className={({ isActive }) => `${styles.link} ${isActive ? styles.active : ''}`}
           >
-            <Icon size={17} className={styles.linkIcon} />
+            <Icon size={16} strokeWidth={1.75} className={styles.linkIcon} />
             <span className={styles.linkLabel}>{label}</span>
           </NavLink>
         ))}
       </div>
       <div className={styles.bottom}>
-        <button className={styles.themeBtn} onClick={toggle} title="Toggle theme">
-          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+        <button
+          className={styles.themeBtn}
+          onClick={toggle}
+          title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+        >
+          {theme === 'dark' ? <Sun size={16} strokeWidth={1.75} /> : <Moon size={16} strokeWidth={1.75} />}
         </button>
         <button className={styles.logoutBtn} onClick={() => { logout(); navigate('/login'); }}>
-          <LogOut size={14} />
+          <LogOut size={16} strokeWidth={1.75} />
           Sign out
         </button>
       </div>

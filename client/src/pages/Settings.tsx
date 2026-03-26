@@ -21,16 +21,16 @@ export default function Settings() {
         </div>
 
         <div className={styles.grid}>
-          <div className={`glass-card ${styles.section}`}>
+          <div className={`panel ${styles.section}`}>
             <h2 className={styles.sectionTitle}>Encryption keys</h2>
             <p className={styles.sectionDesc}>
               Sensitive snippets use client-side encryption. Your private key never leaves your browser.
             </p>
             <div className={styles.keyStatus}>
               {hasKeys ? (
-                <span className="badge badge-teal">🔒 Keypair active</span>
+                <span className="badge">🔒 Keypair active</span>
               ) : (
-                <span className="badge badge-amber">⚠ No keypair — sensitive mode unavailable</span>
+                <span className="badge badge-sensitive">⚠ No keypair — sensitive mode unavailable</span>
               )}
             </div>
             <button
@@ -43,7 +43,7 @@ export default function Settings() {
             {showEncSetup && <EncryptionSetup onDone={() => { setShowEncSetup(false); toast('Keypair ready', 'success'); window.location.reload(); }} />}
           </div>
 
-          <div className={`glass-card ${styles.section}`}>
+          <div className={`panel ${styles.section}`}>
             <h2 className={styles.sectionTitle}>Session</h2>
             <p className={styles.sectionDesc}>
               Unlock sessions for sensitive snippets expire after 15 minutes of inactivity.
@@ -54,7 +54,7 @@ export default function Settings() {
             </button>
           </div>
 
-          <div className={`glass-card ${styles.section}`}>
+          <div className={`panel ${styles.section}`}>
             <h2 className={styles.sectionTitle}>AI assistant</h2>
             <p className={styles.sectionDesc}>
               The local Ollama assistant uses <strong>qwen3-coder:30b</strong> by default.

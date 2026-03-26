@@ -52,8 +52,8 @@ export default function EncryptionSetup({ onDone }: { onDone: () => void }) {
         {step === 'form' && (
           <>
             {error && <p className={styles.error}>{error}</p>}
-            <input className="input-glass" type="password" placeholder="Choose a strong passphrase" value={passphrase} onChange={e => setPassphrase(e.target.value)} required autoFocus />
-            <input className="input-glass" type="password" placeholder="Confirm passphrase" value={confirm} onChange={e => setConfirm(e.target.value)} required />
+            <input className="input" type="password" placeholder="Choose a strong passphrase" value={passphrase} onChange={e => setPassphrase(e.target.value)} required autoFocus />
+            <input className="input" type="password" placeholder="Confirm passphrase" value={confirm} onChange={e => setConfirm(e.target.value)} required />
             <div className={styles.actions}>
               <button type="submit" className="btn-primary" disabled={loading}>
                 Generate keypair
@@ -63,8 +63,8 @@ export default function EncryptionSetup({ onDone }: { onDone: () => void }) {
         )}
 
         <div className={styles.secNote}>
-          <span className="badge badge-teal">🔒 Local only</span>
-          <span className="badge badge-violet">🔑 Private key never sent</span>
+          <span className="badge">🔒 Local only</span>
+          <span className="badge">🔑 Private key never sent</span>
         </div>
       </form>
     </div>

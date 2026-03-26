@@ -37,7 +37,7 @@ export default function PassphrasePrompt({ onUnlock, onCancel }: Props) {
         <p className={styles.desc}>Enter your passphrase to decrypt. Unlock session lasts 15 minutes.</p>
         {error && <p className={styles.error}>{error}</p>}
         <input
-          className="input-glass"
+          className="input"
           type="password"
           placeholder="Passphrase"
           value={passphrase}

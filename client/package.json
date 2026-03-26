@@ -10,6 +10,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.2.7",
+    "@fontsource/ibm-plex-sans": "^5.2.8",
     "@monaco-editor/react": "^4.6.0",
     "libsodium-wrappers": "^0.7.11",
     "lucide-react": "^0.563.0",

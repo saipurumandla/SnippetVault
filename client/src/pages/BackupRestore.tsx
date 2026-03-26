@@ -55,27 +55,27 @@ export default function BackupRestore() {
         </div>
 
         <div className={styles.notice}>
-          <span className="badge badge-teal">🔒 Encrypted</span>
+          <span className="badge">🔒 Encrypted</span>
           <p>Backups are AES-256-GCM encrypted with your passphrase before download. Only standard (non-sensitive) snippets are exported. The server never sees your passphrase.</p>
         </div>
 
         <div className={styles.grid}>
-          <div className={`glass-card ${styles.section}`}>
+          <div className={`panel ${styles.section}`}>
             <h2 className={styles.sectionTitle}>Export backup</h2>
             <p className={styles.sectionDesc}>Download an encrypted backup of your vault.</p>
             <form onSubmit={handleExport} className={styles.form}>
-              <input className="input-glass" type="password" placeholder="Encryption passphrase" value={passphrase} onChange={e => setPassphrase(e.target.value)} required />
+              <input className="input" type="password" placeholder="Encryption passphrase" value={passphrase} onChange={e => setPassphrase(e.target.value)} required />
               <button className="btn-primary" type="submit" disabled={loading}>
                 {loading ? 'Exporting…' : '⬇ Download backup'}
               </button>
             </form>
           </div>
 
-          <div className={`glass-card ${styles.section}`}>
+          <div className={`panel ${styles.section}`}>
             <h2 className={styles.sectionTitle}>Restore backup</h2>
             <p className={styles.sectionDesc}>Restore snippets from an encrypted backup file.</p>
             <form onSubmit={handleRestore} className={styles.form}>
-              <input className="input-glass" type="password" placeholder="Decryption passphrase" value={passphrase} onChange={e => setPassphrase(e.target.value)} required />
+              <input className="input" type="password" placeholder="Decryption passphrase" value={passphrase} onChange={e => setPassphrase(e.target.value)} required />
               <input type="file" accept=".enc" onChange={e => setRestoreFile(e.target.files?.[0] ?? null)} className={styles.fileInput} />
               <button className="btn-primary" type="submit" disabled={loading}>
                 {loading ? 'Restoring…' : '⬆ Restore'}

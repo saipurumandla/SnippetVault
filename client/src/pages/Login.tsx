@@ -41,11 +41,11 @@ export default function Login() {
           {error && <div className={styles.error}>{error}</div>}
           <div className={styles.field}>
             <label className={styles.label}>Email</label>
-            <input className="input-glass" type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus />
+            <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus />
           </div>
           <div className={styles.field}>
             <label className={styles.label}>Password</label>
-            <input className="input-glass" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+            <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
           </div>
           <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', padding: '10px' }}>
             {loading ? 'Signing in…' : 'Sign in'}
@@ -55,9 +55,9 @@ export default function Login() {
         <p className={styles.link}>No account? <Link to="/register">Register</Link></p>
 
         <div className={styles.badges}>
-          <span className="badge badge-teal">🔒 AES-256-GCM</span>
-          <span className="badge badge-violet">🔑 Zero-knowledge</span>
-          <span className="badge badge-indigo">🏠 Self-hosted</span>
+          <span className="badge">🔒 AES-256-GCM</span>
+          <span className="badge">🔑 Zero-knowledge</span>
+          <span className="badge">🏠 Self-hosted</span>
         </div>
       </div>
     </div>

@@ -46,7 +46,7 @@ export default function ExpiredSnippets() {
           <h1 className="page-title">Expired Snippets</h1>
         </div>
         <div className={styles.notice}>
-          <span className="badge badge-amber">⏳ Expiry</span>
+          <span className="badge badge-sensitive">⏳ Expiry</span>
           <p>Expired snippets are hidden from normal search and lists. Only you and project admins can see them here. They can be permanently purged or kept for forensic review.</p>
         </div>
         {loading ? (
@@ -59,13 +59,13 @@ export default function ExpiredSnippets() {
         ) : (
           <div className={styles.list}>
             {snippets.map(s => (
-              <div key={s.id} className={`glass-card ${styles.row}`}>
+              <div key={s.id} className={`panel ${styles.row}`}>
                 <div>
                   <p className={styles.title}>{s.title}</p>
                   <p className={styles.meta}>Expired {s.expires_at ? new Date(s.expires_at).toLocaleString() : "unknown"} · {s.language}</p>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <span className="badge badge-rose">expired</span>
+                  <span className="badge badge-danger">expired</span>
                   <button className="btn-danger" onClick={() => setConfirmPurge(s.id)}>Purge</button>
                 </div>
               </div>

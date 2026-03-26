@@ -31,7 +31,7 @@ function fuzzy(str: string, q: string): boolean {
   return str.toLowerCase().includes(q.toLowerCase());
 }
 
-const TYPE_COLORS: Record<ItemType, string> = { snippet: 'badge-teal', project: 'badge-sky', tag: 'badge-violet', action: 'badge-indigo' };
+const TYPE_COLORS: Record<ItemType, string> = { snippet: 'badge', project: 'badge', tag: 'badge', action: 'badge' };
 
 export default function CommandPalette() {
   const [open, setOpen] = useState(false);
