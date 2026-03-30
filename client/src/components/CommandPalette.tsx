@@ -17,11 +17,11 @@ interface PaletteItem {
 }
 
 const ACTIONS: PaletteItem[] = [
-  { id: 'new-snippet', label: 'New Snippet',      type: 'action', Icon: Plus,        path: '/snippet/new' },
-  { id: 'new-project', label: 'New Project',      type: 'action', Icon: FolderOpen,  path: '/projects' },
-  { id: 'projects',    label: 'Go to Projects',   type: 'action', Icon: FolderOpen,  path: '/projects' },
-  { id: 'security',    label: 'Security Events',  type: 'action', Icon: ShieldCheck, path: '/security' },
-  { id: 'backup',      label: 'Backup & Restore', type: 'action', Icon: HardDrive,   path: '/backup' },
+  { id: 'new-snippet', label: 'New snippet',      type: 'action', Icon: Plus,        path: '/snippet/new' },
+  { id: 'new-project', label: 'New project',      type: 'action', Icon: FolderOpen,  path: '/projects' },
+  { id: 'projects',    label: 'Go to projects',   type: 'action', Icon: FolderOpen,  path: '/projects' },
+  { id: 'security',    label: 'Security events',  type: 'action', Icon: ShieldCheck, path: '/security' },
+  { id: 'backup',      label: 'Backup and restore', type: 'action', Icon: HardDrive,   path: '/backup' },
   { id: 'settings',    label: 'Settings',         type: 'action', Icon: Settings2,   path: '/settings' },
   { id: 'docs',        label: 'Documentation',    type: 'action', Icon: BookOpen,    path: '/docs' },
 ];
@@ -30,8 +30,6 @@ function fuzzy(str: string, q: string): boolean {
   if (!q) return true;
   return str.toLowerCase().includes(q.toLowerCase());
 }
-
-const TYPE_COLORS: Record<ItemType, string> = { snippet: 'badge', project: 'badge', tag: 'badge', action: 'badge' };
 
 export default function CommandPalette() {
   const [open, setOpen] = useState(false);
@@ -95,19 +93,19 @@ export default function CommandPalette() {
     <div className={styles.overlay} onClick={() => setOpen(false)}>
       <div className={styles.dialog} onClick={e => e.stopPropagation()}>
         <div className={styles.inputRow}>
-          <Search size={16} className={styles.inputIcon} />
+          <Search size={16} strokeWidth={1.75} className={styles.inputIcon} />
           <input
             ref={inputRef}
             className={styles.input}
-            placeholder="Search snippets, projects, tags, or run a command…"
+            placeholder="Search snippets, projects, tags or commands"
             value={query}
             onChange={e => { setQuery(e.target.value); setActive(0); }}
             onKeyDown={handleKey}
           />
-          <span className={styles.kbdEsc}>Esc</span>
+          <kbd>Esc</kbd>
         </div>
         {items.length > 0 ? (
-          <ul className={styles.list}>
+          <ul className={styles.list} role="listbox">
             {items.map((item, i) => (
               <li
                 key={item.id}
@@ -115,20 +113,20 @@ export default function CommandPalette() {
                 onClick={() => select(item)}
                 onMouseEnter={() => setActive(i)}
               >
-                <item.Icon size={15} className={styles.itemIcon} />
+                <item.Icon size={16} strokeWidth={1.75} className={styles.itemIcon} />
                 <span className={styles.itemLabel}>{item.label}</span>
                 {item.secondary && <span className={styles.itemSecondary}>{item.secondary}</span>}
-                <span className={`badge ${TYPE_COLORS[item.type]} ${styles.typeBadge}`}>{item.type}</span>
+                <span className={styles.typeLabel}>{item.type}</span>
               </li>
             ))}
           </ul>
         ) : query ? (
-          <p className={styles.empty}>No results for "{query}"</p>
+          <p className={styles.empty}>Nothing matches “{query}”.</p>
         ) : null}
         <div className={styles.footer}>
-          <span>↑↓ navigate</span>
-          <span>Enter select</span>
-          <span>Esc close</span>
+          <span><kbd>↑</kbd> <kbd>↓</kbd> move</span>
+          <span><kbd>Enter</kbd> open</span>
+          <span><kbd>Esc</kbd> close</span>
         </div>
       </div>
     </div>

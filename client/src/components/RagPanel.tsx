@@ -1,19 +1,17 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { renderMarkdown } from '../lib/markdown';
 import { api } from '../lib/api';
-import SnippetPreviewModal from './SnippetPreviewModal';
 import styles from './RagPanel.module.css';
 import { errorMessage } from '../lib/errors';
 import type { Citation } from '../types';
 
-export default function RagPanel() {
+export default function RagPanel({ onCite }: { onCite: (snippetId: number) => void }) {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [citations, setCitations] = useState<Citation[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [lowConfidence, setLowConfidence] = useState(false);
-  const [previewId, setPreviewId] = useState<string | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -24,12 +22,12 @@ export default function RagPanel() {
       const chip = (e.target as HTMLElement).closest('.snip-ref');
       if (chip) {
         const id = chip.getAttribute('data-snip-id');
-        if (id) setPreviewId(id);
+        if (id) onCite(Number(id));
       }
     };
     container.addEventListener('click', handler);
     return () => container.removeEventListener('click', handler);
-  }, [answer]);
+  }, [answer, onCite]);
 
   const handleAsk = async (e: FormEvent) => {
     e.preventDefault();
@@ -56,9 +54,6 @@ export default function RagPanel() {
 
   return (
     <>
-      {previewId && (
-        <SnippetPreviewModal snippetId={previewId} onClose={() => setPreviewId(null)} />
-      )}
 
       <div className={styles.panel}>
         <div className={styles.header}>
@@ -104,7 +99,7 @@ export default function RagPanel() {
                     <button
                       key={c.snippetId}
                       className={styles.sourceChip}
-                      onClick={() => setPreviewId(String(c.snippetId))}
+                      onClick={() => onCite(c.snippetId)}
                     >
                       <span className={styles.sourceId}>#{c.snippetId}</span>
                       <span className={styles.sourceTitle}>{c.title}</span>

@@ -22,11 +22,7 @@
 
 .keyStatus { margin-top: 12px; }
 
-code {
-  background: rgba(255,255,255,0.07);
-  border-radius: 4px;
-  padding: 1px 5px;
+.sectionDesc code {
   font-family: var(--font-code);
-  font-size: 11px;
-  color: var(--teal);
+  font-size: var(--text-sm);
 }

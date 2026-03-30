@@ -2,6 +2,9 @@ import '@testing-library/jest-dom/vitest';
 import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 
+// jsdom dont have scrollIntoView
+Element.prototype.scrollIntoView = () => {};
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
