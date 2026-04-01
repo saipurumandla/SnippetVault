@@ -20,9 +20,9 @@ const SECTIONS: Section[] = [
     Icon: Archive,
     title: 'What is SnippetVault?',
     body: [
-      { type: 'p', text: 'SnippetVault is a self-hosted, local-first code snippet manager for developer teams. All data lives in a local SQLite database — no cloud account, no vendor lock-in.' },
-      { type: 'p', text: 'Core features: Monaco Editor with syntax highlighting, full-text search, project workspaces, tag filtering, command palette (Ctrl+K), hybrid encryption, and local AI assistance via Ollama.' },
-      { type: 'list', items: ['SQLite database — everything local', 'AES-256-GCM encryption for standard snippets', 'Zero-knowledge client-side encryption for sensitive snippets', 'Local Ollama AI — no code leaves your machine'] },
+      { type: 'p', text: 'SnippetVault is a self-hosted snippet manager for developer teams. All data is in one local SQLite file. No cloud account.' },
+      { type: 'p', text: 'Monaco editor, full-text and semantic search, projects, tags, a command palette (Ctrl K), sensitive snippets encrypted in the browser, and an assistant that runs on your own Ollama.' },
+      { type: 'list', items: ['SQLite file, everything local', 'Standard snippets: plain text, access by visibility', 'Sensitive snippets: encrypted in the browser', 'Assistant on local Ollama, code stays on your machine'] },
     ],
   },
   {
@@ -30,13 +30,13 @@ const SECTIONS: Section[] = [
     Icon: FilePlus,
     title: 'Creating & editing snippets',
     body: [
-      { type: 'p', text: 'Click "+ New Snippet" in the top-right or press Ctrl+K → New Snippet.' },
+      { type: 'p', text: 'Press N, click New snippet at the top right, or use Ctrl K and pick New snippet.' },
       { type: 'heading', text: 'Fields' },
-      { type: 'list', items: ['Title — required, shows in search and cards', 'Description — optional, appears under the title', 'Language — sets Monaco syntax highlighting', 'Tags — type and press Enter to add; backspace removes last tag', 'Project — assigns the snippet to a workspace', 'Visibility — Private, Project, or Shared', 'Encryption mode — Standard or Sensitive'] },
+      { type: 'list', items: ['Title — required, shows in the list and in search', 'Description — optional, appears under the title', 'Language — sets Monaco syntax highlighting', 'Tags — type and press Enter to add; backspace removes last tag', 'Project — assigns the snippet to a workspace', 'Visibility — Private, Project, or Shared', 'Encryption mode — Standard or Sensitive'] },
       { type: 'heading', text: 'Saving' },
-      { type: 'p', text: 'Hit "Save snippet" — the snippet is encrypted and written to the database. Tags are synced in separate requests after save.' },
+      { type: 'p', text: 'Save snippet writes it to the database. Tags are saved right after, in separate requests.' },
       { type: 'heading', text: 'Editing' },
-      { type: 'p', text: 'Open any snippet → click Edit. The form pre-fills with current values. Each save creates a version entry in snippet_versions.' },
+      { type: 'p', text: 'Open a snippet and click Edit. When the code changes, the old code is kept as a version.' },
     ],
   },
   {
@@ -45,7 +45,7 @@ const SECTIONS: Section[] = [
     title: 'Encryption explained',
     body: [
       { type: 'heading', text: 'Standard mode (default)' },
-      { type: 'p', text: 'Every snippet is encrypted at rest with AES-256-GCM before being written to disk. Each snippet gets a random 256-bit key, which is then wrapped by a project key (or your personal key if no project is set). The server can read and search the content.' },
+      { type: 'p', text: 'Standard snippets are stored as plain text in SQLite. Visibility decides who can read them. The server can search them and the assistant can use them.' },
       { type: 'heading', text: 'Sensitive mode (zero-knowledge)' },
       { type: 'p', text: 'The snippet is encrypted in your browser using libsodium sealed box (X25519 + XSalsa20-Poly1305) before upload. The server stores ciphertext only — it cannot decrypt the content under any circumstances.' },
       { type: 'p', text: 'To enable sensitive mode: go to Settings → Set up encryption to generate a keypair. Your private key is encrypted with your passphrase and stored only in your browser (localStorage). It never leaves your device.' },
@@ -62,9 +62,9 @@ const SECTIONS: Section[] = [
     body: [
       { type: 'p', text: 'Projects let you organise snippets by team, repository, or topic.' },
       { type: 'heading', text: 'Creating a project' },
-      { type: 'p', text: 'Go to Projects → New Project. Give it a name and optional description. You\'re automatically added as a member and owner.' },
+      { type: 'p', text: 'Go to Projects and click New project. You become the owner and first member.' },
       { type: 'heading', text: 'Adding members' },
-      { type: 'p', text: 'Enter a teammate\'s email in the "Add member" field on the project card. They must already have an account on the same instance.' },
+      { type: 'p', text: 'Type a teammate\'s email in the Add member column and press Add. They need an account on this instance first.' },
       { type: 'heading', text: 'Visibility' },
       { type: 'list', items: ['Private — only you', 'Project — all project members', 'Shared — every logged-in user on the instance'] },
     ],
@@ -75,9 +75,9 @@ const SECTIONS: Section[] = [
     title: 'Search & command palette',
     body: [
       { type: 'heading', text: 'Full-text search' },
-      { type: 'p', text: 'The search bar at the top uses SQLite FTS5, which searches across snippet titles, descriptions, and code bodies in real time. Results respect your current language/project/tag filters.' },
+      { type: 'p', text: 'The search box (press /) uses SQLite FTS5 over titles, descriptions and code. It works together with the filters.' },
       { type: 'heading', text: 'Language & tag filters' },
-      { type: 'p', text: 'Click any language chip in the left sidebar to filter. Click a tag pill to show only snippets with that tag. Click "Clear filters" to reset.' },
+      { type: 'p', text: 'Use the Language, Project and Tag menus above the list. Clear resets them. Up and down arrows move in the list, Enter opens the snippet.' },
       { type: 'heading', text: 'Command palette  Ctrl+K' },
       { type: 'list', items: ['Fuzzy search across snippet titles', 'Navigate to any project', 'Filter by tag', 'Run actions: New Snippet, New Project, Settings, Docs', 'Arrow keys to navigate, Enter to select, Esc to close'] },
     ],
@@ -88,12 +88,12 @@ const SECTIONS: Section[] = [
     title: 'RAG search & AI assistant',
     body: [
       { type: 'heading', text: 'Ask your vault (RAG)' },
-      { type: 'p', text: 'Click "✦ Ask AI" in the Vault toolbar to open the question panel. Ask anything about your snippets in natural language.' },
+      { type: 'p', text: 'Click Ask your vault above the list and ask a question in plain words. Click a source to preview that snippet.' },
       { type: 'p', text: 'Retrieval combines BM25 (keyword match over FTS5) with vector similarity using locally-generated embeddings. Answers are generated by Ollama and must cite source snippets — uncited answers are blocked.' },
       { type: 'heading', text: 'Per-snippet assistant (detail view)' },
       { type: 'list', items: ['Explain — plain-English breakdown of what the code does', 'Summarize — 2–3 sentence summary', 'Refactor draft — one suggested improvement (you must accept explicitly)'] },
       { type: 'heading', text: 'Setup' },
-      { type: 'p', text: 'Start Ollama and run: npm run index (from project root). This chunks and embeds all plaintext snippets. Re-run after adding new snippets.' },
+      { type: 'p', text: 'Start Ollama. New and edited snippets are indexed when saved. To rebuild the whole index run npm run index from the project root.' },
       { type: 'heading', text: 'Safety rules' },
       { type: 'list', items: ['Sensitive encrypted snippets excluded from AI paths', 'Prompt-injection patterns refused before retrieval', 'Secret-like tokens redacted from responses', 'Uncited answers blocked from rendering'] },
     ],
@@ -105,7 +105,7 @@ const SECTIONS: Section[] = [
     body: [
       { type: 'p', text: 'Go to Backup in the sidebar.' },
       { type: 'heading', text: 'Export' },
-      { type: 'p', text: 'Downloads an AES-256-GCM encrypted .enc file. Your passphrase is used to derive a key via scrypt — it is never sent to the server. Only standard (non-sensitive) snippets are included.' },
+      { type: 'p', text: 'Downloads a .enc file encrypted with AES-256-GCM. The server derives the key from your passphrase with scrypt, so use a passphrase only for backups. Only standard snippets are included.' },
       { type: 'heading', text: 'Restore' },
       { type: 'p', text: 'Upload a .enc file and enter the original passphrase. Snippets are imported with INSERT OR IGNORE — existing snippets are not overwritten.' },
     ],
@@ -115,8 +115,8 @@ const SECTIONS: Section[] = [
     Icon: ShieldCheck,
     title: 'Security event log',
     body: [
-      { type: 'p', text: 'Every significant action is recorded: decrypt, share, export, revoke. Go to Security in the sidebar to view the audit log.' },
-      { type: 'p', text: 'Events include: timestamp, event type, and snippet ID where applicable. The log is append-only — no event is ever deleted.' },
+      { type: 'p', text: 'Sharing a sensitive snippet is recorded here, with the time and how many people it went to. Go to Security in the sidebar to see it.' },
+      { type: 'p', text: 'The app only adds to this log, it never edits or deletes events.' },
       { type: 'heading', text: 'Unlock session' },
       { type: 'p', text: 'Sensitive snippet unlock sessions last 15 minutes of inactivity. Session keys are held in memory only — a full page reload clears them.' },
     ],
@@ -126,7 +126,6 @@ const SECTIONS: Section[] = [
 export default function Docs() {
   const [active, setActive] = useState('overview');
   const section = SECTIONS.find(s => s.id === active) ?? SECTIONS[0]!;
-  const { Icon } = section;
 
   return (
     <div>
@@ -140,19 +139,14 @@ export default function Docs() {
               className={`${styles.tocItem} ${active === s.id ? styles.tocActive : ''}`}
               onClick={() => setActive(s.id)}
             >
-              <s.Icon size={14} />
+              <s.Icon size={16} strokeWidth={1.75} />
               {s.title}
             </button>
           ))}
         </aside>
 
         <main className={styles.content}>
-          <div className={styles.docHeader}>
-            <div className={styles.docIconWrap}>
-              <Icon size={22} />
-            </div>
-            <h1 className={styles.docTitle}>{section.title}</h1>
-          </div>
+          <h1 className={styles.docTitle}>{section.title}</h1>
 
           <div className={styles.docBody}>
             {section.body.map((block, i) => {

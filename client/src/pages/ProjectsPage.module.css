@@ -1,58 +1,59 @@
 .createForm {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 20px;
-  background: var(--bg-glass);
-  backdrop-filter: var(--blur);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  margin-bottom: 24px;
-  max-width: 480px;
-}
-
-.formTitle {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 4px;
-}
-
-.grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+  grid-template-columns: 1fr 1.5fr;
+  gap: var(--s3);
+  margin-bottom: var(--s6);
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
 }
 
-.card { padding: 18px; }
-
-.cardHeader {
+.formActions {
+  grid-column: 1 / -1;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
+  gap: var(--s2);
 }
 
-.cardName {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-md);
 }
 
-.cardDesc {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-bottom: 8px;
+.table th {
+  text-align: left;
+  font-weight: 500;
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  padding: var(--s2) var(--s3);
+  border-bottom: 1px solid var(--line);
 }
 
-.cardMeta {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-bottom: 12px;
+.table td {
+  padding: var(--s2) var(--s3);
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.name {
+  font-weight: 500;
+}
+
+.muted {
+  color: var(--ink-muted);
 }
 
 .memberForm {
   display: flex;
-  gap: 8px;
-  margin-top: 8px;
+  gap: var(--s2);
+  max-width: 340px;
+}
+
+.note {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s3);
+  color: var(--ink-muted);
 }

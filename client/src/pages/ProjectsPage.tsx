@@ -1,28 +1,36 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { Plus } from 'lucide-react';
 import { api } from '../lib/api';
+import { errorMessage } from '../lib/errors';
+import { shortDate } from '../lib/dates';
 import { useToast } from '../context/ToastContext';
 import Header from '../components/Header';
-import styles from './ProjectsPage.module.css';
-import { errorMessage } from '../lib/errors';
 import type { Project, UserSummary } from '../types';
+import styles from './ProjectsPage.module.css';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState('');
+  const [nameError, setNameError] = useState('');
   const [description, setDescription] = useState('');
   const [memberEmail, setMemberEmail] = useState<Record<number, string>>({});
   const { toast } = useToast();
 
   const load = () => {
-    api.get<Project[]>('/projects').then(setProjects).catch(() => {}).finally(() => setLoading(false));
+    setLoadError('');
+    api.get<Project[]>('/projects')
+      .then(setProjects)
+      .catch(err => setLoadError(errorMessage(err)))
+      .finally(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) { setNameError('Name is required'); return; }
     try {
       await api.post('/projects', { name: name.trim(), description: description.trim() || undefined });
       toast('Project created', 'success');
@@ -38,9 +46,9 @@ export default function ProjectsPage() {
     try {
       const allUsers = await api.get<UserSummary[]>('/auth/users').catch((): UserSummary[] => []);
       const target = allUsers.find(u => u.email === email);
-      if (!target) { toast('User not found', 'error'); return; }
+      if (!target) { toast(`No user with email ${email}`, 'error'); return; }
       await api.post(`/projects/${projectId}/members`, { userId: target.id });
-      toast('Member added', 'success');
+      toast(`${email} added`, 'success');
       setMemberEmail(prev => ({ ...prev, [projectId]: '' }));
     } catch (err) { toast(errorMessage(err), 'error'); }
   };
@@ -51,52 +59,75 @@ export default function ProjectsPage() {
       <div className="page-content">
         <div className="page-header">
           <h1 className="page-title">Projects</h1>
-          <button className="btn-primary" onClick={() => setShowCreate(s => !s)}>
-            {showCreate ? 'Cancel' : '+ New Project'}
-          </button>
+          {!showCreate && (
+            <button className="btn-primary" onClick={() => setShowCreate(true)}>
+              <Plus size={16} strokeWidth={1.75} />
+              New project
+            </button>
+          )}
         </div>
 
         {showCreate && (
           <form className={styles.createForm} onSubmit={handleCreate}>
-            <h2 className={styles.formTitle}>Create project</h2>
-            <input className="input" placeholder="Project name" value={name} onChange={e => setName(e.target.value)} required />
-            <input className="input" placeholder="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} />
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button type="submit" className="btn-primary">Create</button>
+            <div>
+              <label className="field-label" htmlFor="project-name">Name<span className="required">*</span></label>
+              <input id="project-name" className="input" value={name} aria-invalid={!!nameError} autoFocus
+                onChange={e => { setName(e.target.value); setNameError(''); }} />
+              {nameError && <p className="field-error">{nameError}</p>}
+            </div>
+            <div>
+              <label className="field-label" htmlFor="project-desc">Description</label>
+              <input id="project-desc" className="input" value={description} onChange={e => setDescription(e.target.value)} />
+            </div>
+            <div className={styles.formActions}>
+              <button type="submit" className="btn-primary">Create project</button>
               <button type="button" className="btn-ghost" onClick={() => setShowCreate(false)}>Cancel</button>
             </div>
           </form>
         )}
 
         {loading ? (
-          <p style={{ color: 'var(--text-muted)', marginTop: 32 }}>Loading…</p>
+          <p className={styles.note}>Loading projects…</p>
+        ) : loadError ? (
+          <div className={styles.note}>
+            <p>Could not load projects: {loadError}</p>
+            <button className="btn-ghost" onClick={load}>Try again</button>
+          </div>
         ) : projects.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">◈</div>
-            <p className="empty-state-text">No projects yet.<br />Create one to organise snippets by team or repo.</p>
-          </div>
+          <p className={styles.note}>No projects yet. A project groups snippets for a team or a repo.</p>
         ) : (
-          <div className={styles.grid}>
-            {projects.map(p => (
-              <div key={p.id} className={`panel ${styles.card}`}>
-                <div className={styles.cardHeader}>
-                  <span className={styles.cardName}>{p.name}</span>
-                  <span className="badge">Project</span>
-                </div>
-                {p.description && <p className={styles.cardDesc}>{p.description}</p>}
-                <p className={styles.cardMeta}>Created {new Date(p.created_at).toLocaleDateString()}</p>
-                <form className={styles.memberForm} onSubmit={e => handleAddMember(p.id, e)}>
-                  <input
-                    className="input"
-                    placeholder="Add member by email"
-                    value={memberEmail[p.id] || ''}
-                    onChange={e => setMemberEmail(prev => ({ ...prev, [p.id]: e.target.value }))}
-                  />
-                  <button type="submit" className="btn-ghost" style={{ whiteSpace: 'nowrap' }}>Add</button>
-                </form>
-              </div>
-            ))}
-          </div>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Created</th>
+                <th>Add member</th>
+              </tr>
+            </thead>
+            <tbody>
+              {projects.map(p => (
+                <tr key={p.id}>
+                  <td className={styles.name}>{p.name}</td>
+                  <td className={styles.muted}>{p.description || '—'}</td>
+                  <td className={styles.muted}>{shortDate(p.created_at)}</td>
+                  <td>
+                    <form className={styles.memberForm} onSubmit={e => handleAddMember(p.id, e)}>
+                      <input
+                        className="input"
+                        type="email"
+                        placeholder="teammate@example.com"
+                        aria-label={`Add member to ${p.name}`}
+                        value={memberEmail[p.id] || ''}
+                        onChange={e => setMemberEmail(prev => ({ ...prev, [p.id]: e.target.value }))}
+                      />
+                      <button type="submit" className="btn-ghost">Add</button>
+                    </form>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>

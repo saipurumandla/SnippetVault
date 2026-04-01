@@ -1,16 +1,32 @@
 import { useState } from 'react';
+import { Check } from 'lucide-react';
 import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import EncryptionSetup from '../components/EncryptionSetup';
 import Header from '../components/Header';
 import styles from './Settings.module.css';
 
 export default function Settings() {
   const { logout } = useAuth();
+  const { theme, toggle } = useTheme();
   const { toast } = useToast();
   const [showEncSetup, setShowEncSetup] = useState(false);
+  const [checking, setChecking] = useState(false);
   const hasKeys = !!localStorage.getItem('encPublicKey');
+
+  const checkOllama = async () => {
+    setChecking(true);
+    try {
+      const d = await api.get<{ available: boolean; models: string[] }>('/assistant/models');
+      toast(d.available ? `Ollama is running, ${d.models.length} models allowed` : 'Ollama is not reachable', d.available ? 'success' : 'warning');
+    } catch {
+      toast('Could not check Ollama', 'error');
+    } finally {
+      setChecking(false);
+    }
+  };
 
   return (
     <div>
@@ -20,55 +36,67 @@ export default function Settings() {
           <h1 className="page-title">Settings</h1>
         </div>
 
-        <div className={styles.grid}>
-          <div className={`panel ${styles.section}`}>
+        <section className={styles.section}>
+          <div>
             <h2 className={styles.sectionTitle}>Encryption keys</h2>
             <p className={styles.sectionDesc}>
-              Sensitive snippets use client-side encryption. Your private key never leaves your browser.
+              Sensitive snippets are encrypted in your browser. Your private key is protected by your
+              passphrase and never leaves this browser.
             </p>
-            <div className={styles.keyStatus}>
-              {hasKeys ? (
-                <span className="badge">🔒 Keypair active</span>
-              ) : (
-                <span className="badge badge-sensitive">⚠ No keypair — sensitive mode unavailable</span>
-              )}
-            </div>
-            <button
-              className="btn-primary"
-              style={{ marginTop: 14 }}
-              onClick={() => setShowEncSetup(true)}
-            >
-              {hasKeys ? 'Regenerate keypair' : 'Set up encryption'}
-            </button>
-            {showEncSetup && <EncryptionSetup onDone={() => { setShowEncSetup(false); toast('Keypair ready', 'success'); window.location.reload(); }} />}
           </div>
+          <div className={styles.controls}>
+            {hasKeys ? (
+              <span className="badge badge-ok"><Check size={12} strokeWidth={2} /> Keypair set up</span>
+            ) : (
+              <span className="badge">No keypair yet</span>
+            )}
+            <button className={hasKeys ? 'btn-ghost' : 'btn-primary'} onClick={() => setShowEncSetup(true)}>
+              {hasKeys ? 'Create new keypair' : 'Set up encryption'}
+            </button>
+          </div>
+          {showEncSetup && (
+            <EncryptionSetup onDone={() => { setShowEncSetup(false); toast('Keypair ready', 'success'); window.location.reload(); }} />
+          )}
+        </section>
 
-          <div className={`panel ${styles.section}`}>
+        <section className={styles.section}>
+          <div>
+            <h2 className={styles.sectionTitle}>Theme</h2>
+            <p className={styles.sectionDesc}>Follows your system setting until you pick one here.</p>
+          </div>
+          <div className={styles.controls}>
+            <button className="btn-ghost" onClick={toggle}>
+              Use {theme === 'dark' ? 'light' : 'dark'} theme
+            </button>
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <div>
+            <h2 className={styles.sectionTitle}>Assistant</h2>
+            <p className={styles.sectionDesc}>
+              Runs on your own Ollama, default model <code>qwen3-coder:30b</code>.
+              Change it with <code>OLLAMA_DEFAULT_MODEL</code> in <code>.env</code>.
+            </p>
+          </div>
+          <div className={styles.controls}>
+            <button className="btn-ghost" onClick={checkOllama} disabled={checking}>
+              {checking ? 'Checking…' : 'Check Ollama'}
+            </button>
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <div>
             <h2 className={styles.sectionTitle}>Session</h2>
             <p className={styles.sectionDesc}>
-              Unlock sessions for sensitive snippets expire after 15 minutes of inactivity.
-              Signing out clears all in-memory keys immediately.
+              Unlocked sensitive snippets lock again after 15 minutes. Signing out clears all keys from memory.
             </p>
-            <button className="btn-danger" style={{ marginTop: 14 }} onClick={() => { logout(); window.location.href = '/login'; }}>
-              Sign out
-            </button>
           </div>
-
-          <div className={`panel ${styles.section}`}>
-            <h2 className={styles.sectionTitle}>AI assistant</h2>
-            <p className={styles.sectionDesc}>
-              The local Ollama assistant uses <strong>qwen3-coder:30b</strong> by default.
-              Change the model in <code>.env</code> via <code>OLLAMA_DEFAULT_MODEL</code>.
-            </p>
-            <button className="btn-ghost" style={{ marginTop: 14 }} onClick={() =>
-              api.get<{ available: boolean; models: string[] }>('/assistant/models')
-                .then(d => toast(d.available ? `Ollama ready — ${d.models.length} models` : 'Ollama not reachable', d.available ? 'success' : 'warning'))
-                .catch(() => toast('Could not check Ollama', 'error'))
-            }>
-              Check Ollama status
-            </button>
+          <div className={styles.controls}>
+            <button className="btn-danger" onClick={() => { logout(); window.location.href = '/login'; }}>Sign out</button>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
