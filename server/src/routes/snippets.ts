@@ -4,6 +4,7 @@ import auth from '../middleware/authMiddleware.js';
 import { snippetSchema, validate, type SnippetInput } from '../validation.js';
 import { indexSnippet, removeFromIndex } from '../rag/indexer.js';
 import { embed } from '../rag/embedder.js';
+import { ftsPrefix } from '../rag/fts.js';
 import type { SnippetRow } from '../types.js';
 
 const router = express.Router();
@@ -35,8 +36,10 @@ router.get('/', auth, (req, res) => {
   const now = new Date().toISOString();
 
   if (q && q.trim()) {
-    const matchIds = (db.prepare('SELECT rowid FROM snippets_fts WHERE snippets_fts MATCH ? ORDER BY rank')
-      .all(`${q.trim()}*`) as { rowid: number }[]).map(r => r.rowid);
+    const match = ftsPrefix(q);
+    const matchIds = match
+      ? (db.prepare('SELECT rowid FROM snippets_fts WHERE snippets_fts MATCH ? ORDER BY rank').all(match) as { rowid: number }[]).map(r => r.rowid)
+      : [];
     if (matchIds.length === 0) {
       res.json([]);
       return;

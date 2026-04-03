@@ -43,3 +43,30 @@ describe('rag and assistant guards', () => {
     expect((await request(app).get(`/api/stream/convert/${s.id}?token=${u.token}`)).status).toBe(400);
   });
 });
+
+describe('search with punctuation', () => {
+  it('rag question with a question mark does not crash', async () => {
+    const u = await newUser();
+    await newSnippet(u, { title: 'Retry http calls', code: 'retry(fetch)' });
+    const res = await request(app).post('/api/rag/ask').set('Authorization', u.auth)
+      .send({ question: 'how do we retry http calls?' });
+    expect(res.status).not.toBe(500);
+  });
+
+  it('rag question with only symbols is low confidence', async () => {
+    const u = await newUser();
+    const res = await request(app).post('/api/rag/ask').set('Authorization', u.auth).send({ question: '??? -- "' });
+    expect(res.body.lowConfidence).toBe(true);
+  });
+
+  it('vault search handles punctuation and quotes', async () => {
+    const u = await newUser();
+    await newSnippet(u, { title: 'Parse csv file', code: 'import csv' });
+    for (const q of ['csv?', 'parse-csv', '"csv', 'csv:', 'NEAR(', '***']) {
+      const res = await request(app).get(`/api/snippets?q=${encodeURIComponent(q)}`).set('Authorization', u.auth);
+      expect(res.status, q).toBe(200);
+    }
+    const hit = await request(app).get('/api/snippets?q=pars').set('Authorization', u.auth);
+    expect(hit.body.map(s => s.title)).toEqual(['Parse csv file']);
+  });
+});

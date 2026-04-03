@@ -1,5 +1,6 @@
 import db from '../db.js';
 import { embed } from './embedder.js';
+import { ftsAnyOf } from './fts.js';
 
 const TOP_K = 10;
 const BM25_WEIGHT = 0.4;
@@ -31,7 +32,8 @@ const ACCESS_FILTER = `(s.author_id = ? OR s.visibility = 'shared'
     AND s.encryption_mode = 'standard'`;
 
 function bm25Search(query: string, userId: number, projectId: number | null): RetrievedChunk[] {
-  const ftsQuery = query.trim().split(/\s+/).join(' OR ');
+  const ftsQuery = ftsAnyOf(query);
+  if (!ftsQuery) return [];
   const params: (string | number)[] = [ftsQuery, userId, userId];
   let filter = '';
   if (projectId) { filter = ' AND s.project_id = ?'; params.push(projectId); }
