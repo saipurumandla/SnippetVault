@@ -11,12 +11,8 @@ import ConfirmModal from '../components/ConfirmModal';
 import SnippetRow from '../components/SnippetRow';
 import SnippetPreview from '../components/SnippetPreview';
 import type { Project, Snippet } from '../types';
+import { isTypingTarget } from '../lib/keyboard';
 import styles from './Vault.module.css';
-
-function typingInField(target: EventTarget | null): boolean {
-  const el = target as HTMLElement | null;
-  return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT');
-}
 
 export default function Vault() {
   const [searchParams] = useSearchParams();
@@ -78,7 +74,7 @@ export default function Vault() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (typingInField(e.target) || confirmDelete !== null || e.ctrlKey || e.metaKey) return;
+      if (isTypingTarget(e.target) || confirmDelete !== null || e.ctrlKey || e.metaKey) return;
       if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
       if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
       if (e.key === 'Enter' && selectedId !== null) navigate(`/snippet/${selectedId}`);

@@ -20,7 +20,7 @@ export function renderMarkdown(text: string): string {
   // [snippet:N] become chips before marked see them
   const processed = (text || '').replace(
     /\[snippet:(\d+)\]/g,
-    '<button class="snip-ref" data-snip-id="$1">↗ #$1</button>',
+    '<button class="snip-ref" data-snip-id="$1">#$1</button>',
   );
   return marked.parse(processed, { async: false });
 }

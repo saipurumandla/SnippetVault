@@ -2,16 +2,19 @@ import { useEffect, useRef, useState } from 'react';
 import { renderMarkdown } from '../lib/markdown';
 import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
+import { TriangleAlert, X } from 'lucide-react';
+import { languageLabel } from '../lib/languages';
 import CitationList from './CitationList';
+import { useEscape } from './useEscape';
 import styles from './StreamResponse.module.css';
 import { errorMessage } from '../lib/errors';
 import type { AiAction, Citation, Snippet } from '../types';
 
 const ACTION_LABELS: Record<AiAction, string> = {
-  explain:   'Explanation',
+  explain: 'Explanation',
   summarize: 'Summary',
-  refactor:  'Refactor Draft',
-  convert:   'Language Conversion',
+  refactor: 'Refactor draft',
+  convert: 'Conversion',
 };
 
 function extractCodeBlock(text: string): string | null {
@@ -42,6 +45,7 @@ export default function StreamResponse({ snippetId, action, model, language, tar
   const [applying, setApplying] = useState(false);
   const [saving, setSaving] = useState(false);
   const esRef = useRef<EventSource | null>(null);
+  useEscape(onClose);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -64,11 +68,11 @@ export default function StreamResponse({ snippetId, action, model, language, tar
 
   const handleApply = async () => {
     const extracted = extractCodeBlock(tokens);
-    if (!extracted) { toast('No code block found in refactor response', 'warning'); return; }
+    if (!extracted) { toast('The answer has no code block to apply', 'warning'); return; }
     setApplying(true);
     try {
       await api.put(`/snippets/${snippetId}`, { code: extracted });
-      toast('Refactor applied and saved', 'success');
+      toast('Refactor saved', 'success');
       if (onApplied) onApplied(extracted);
       onClose();
     } catch (err) {
@@ -118,79 +122,57 @@ export default function StreamResponse({ snippetId, action, model, language, tar
 
   return (
     <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={e => e.stopPropagation()}>
+      <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="ai-title" onClick={e => e.stopPropagation()}>
         <div className={styles.header}>
-          <div className={styles.headerLeft}>
-            <span className={styles.headerIcon}>✦</span>
-            <span className={styles.headerTitle}>{ACTION_LABELS[action]}</span>
-          {isConvert && targetLanguage && (
-            <span className={styles.headerSub}>→ {targetLanguage}</span>
-          )}
-            {!done && <span className={styles.streaming}>generating…</span>}
-          </div>
+          <h2 id="ai-title" className={styles.headerTitle}>
+            {ACTION_LABELS[action]}
+            {isConvert && targetLanguage && <span className={styles.headerSub}>to {languageLabel(targetLanguage)}</span>}
+          </h2>
+          {!done && <span className={styles.streaming}>Writing…</span>}
           <div className={styles.headerActions}>
             {!done && (
-              <button className={styles.cancelBtn} onClick={() => { esRef.current?.close(); setDone(true); }}>
-                Cancel
-              </button>
+              <button className="btn-ghost" onClick={() => { esRef.current?.close(); setDone(true); }}>Stop</button>
             )}
-            <button className={styles.closeBtn} onClick={onClose}>✕</button>
+            <button className={styles.closeBtn} onClick={onClose} aria-label="Close">
+              <X size={16} strokeWidth={1.75} />
+            </button>
           </div>
         </div>
 
         <div className={styles.body}>
-          {error && <p className={styles.error}>{error}</p>}
+          {error && <p className={styles.error} role="alert">{error}</p>}
 
-          {!done && tokens && (
-            <div className={styles.streamingText}>
-              {tokens}
-              <span className={styles.cursor}>▌</span>
-            </div>
-          )}
+          {!done && tokens && <div className={styles.streamingText}>{tokens}</div>}
 
-          {done && !isRefactor && tokens && (
-            <div
-              className={styles.markdown}
-              dangerouslySetInnerHTML={toHtml(tokens)}
-            />
+          {done && !isCodeAction && tokens && (
+            <div className={styles.markdown} dangerouslySetInnerHTML={toHtml(tokens)} />
           )}
 
           {done && isCodeAction && (
-            <div className={styles.refactorLayout}>
-              {/* no code block means model refused, show why */}
+            <div className={styles.codeLayout}>
               {!extractedCode && explanation && (
-                <div className={styles.refusalCard}>
-                  <div className={styles.refusalIcon}>⚠</div>
-                  <div
-                    className={styles.markdown}
-                    dangerouslySetInnerHTML={toHtml(explanation)}
-                  />
+                <div className={styles.refusal}>
+                  <TriangleAlert size={16} strokeWidth={1.75} className={styles.refusalIcon} />
+                  <div className={styles.markdown} dangerouslySetInnerHTML={toHtml(explanation)} />
                 </div>
               )}
-
               {extractedCode && explanation && (
-                <div
-                  className={styles.markdown}
-                  dangerouslySetInnerHTML={toHtml(explanation)}
-                />
+                <div className={styles.markdown} dangerouslySetInnerHTML={toHtml(explanation)} />
               )}
-
               {extractedCode && (
                 <div className={styles.codeSection}>
                   <div className={styles.codeHeader}>
-                    <span className={styles.codeLabel}>{codeLabel}</span>
-                    <div className={styles.codeActions}>
-                      {isRefactor && (
-                        <button className={styles.applyBtn} onClick={handleApply} disabled={applying}>
-                          {applying ? 'Applying…' : '⬇ Apply & Save'}
-                        </button>
-                      )}
-                      {isConvert && (
-                        <button className={styles.applyBtn} onClick={handleSaveConverted} disabled={saving}>
-                          {saving ? 'Saving…' : '＋ Save as new snippet'}
-                        </button>
-                      )}
-                    </div>
+                    <span className={styles.codeLabel}>{languageLabel(codeLabel)}</span>
+                    {isRefactor && (
+                      <button className="btn-primary" onClick={handleApply} disabled={applying}>
+                        {applying ? 'Saving…' : 'Apply and save'}
+                      </button>
+                    )}
+                    {isConvert && (
+                      <button className="btn-primary" onClick={handleSaveConverted} disabled={saving}>
+                        {saving ? 'Saving…' : 'Save as new snippet'}
+                      </button>
+                    )}
                   </div>
                   <pre className={styles.codeBlock}>{extractedCode}</pre>
                 </div>

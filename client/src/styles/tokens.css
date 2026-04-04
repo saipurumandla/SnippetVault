@@ -13,6 +13,7 @@
   --sensitive-soft: color-mix(in srgb, var(--sensitive) 12%, transparent);
   --shadow-float: 0 4px 16px rgb(0 0 0 / 0.12), 0 1px 3px rgb(0 0 0 / 0.08);
   --on-accent: #ffffff;
+  --scrim: rgb(0 0 0 / 0.35);
 
   --font-ui: 'IBM Plex Sans', system-ui, sans-serif;
   --font-code: 'IBM Plex Mono', ui-monospace, monospace;
@@ -50,51 +51,7 @@
   --sensitive: #d9a441;
   --shadow-float: 0 4px 16px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
   --on-accent: #111214;
+  --scrim: rgb(0 0 0 / 0.55);
 
   color-scheme: dark;
-}
-
-/* old names, still used by screens not moved yet. delete when none left */
-:root {
-  --text-primary: var(--ink);
-  --text-secondary: var(--ink-muted);
-  --text-muted: var(--ink-muted);
-  --border-subtle: var(--line);
-  --border: var(--line);
-  --bg-base: var(--paper);
-  --bg-glass: var(--surface);
-  --bg-glass-hover: var(--surface);
-  --bg-input: var(--paper);
-  --radius-lg: var(--radius-md);
-  --blur: none;
-  --accent-dim: var(--accent-soft);
-  --accent-glow: none;
-  --shadow-glow: none;
-  --shadow-sm: none;
-  --shadow-md: var(--shadow-float);
-  --shadow-lg: var(--shadow-float);
-  --grad-primary: var(--accent);
-  --grad-accent: var(--accent);
-  --grad-danger: var(--danger);
-  --grad-emerald: var(--ok);
-  --grad-muted: var(--surface);
-  --teal: var(--accent);
-  --cyan: var(--accent);
-  --indigo: var(--accent);
-  --sky: var(--accent);
-  --violet: var(--ink-muted);
-  --orange: var(--accent);
-  --slate: var(--ink-muted);
-  --emerald: var(--ok);
-  --amber: var(--sensitive);
-  --rose: var(--danger);
-  --color-bg: var(--paper);
-  --color-surface: var(--surface);
-  --color-card: var(--surface);
-  --color-border: var(--line);
-  --color-text: var(--ink);
-  --color-muted: var(--ink-muted);
-  --color-accent: var(--accent);
-  --color-error: var(--danger);
-  --color-select: var(--accent-soft);
 }

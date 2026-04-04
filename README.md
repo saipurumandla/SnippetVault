@@ -1,6 +1,8 @@
 # SnippetVault
 
-Self-hosted, local-first code snippet manager for developer teams. Store, tag, search, and securely share code snippets with a futuristic dark UI, command palette, client-side encryption for sensitive content, and a fully local AI assistant powered by Ollama.
+Self-hosted, local-first code snippet manager for developer teams. Store, tag, search and share code snippets. Sensitive snippets are encrypted in the browser, and the assistant runs on your own Ollama.
+
+Screenshots and a walk through: [DEMO.md](DEMO.md). UI rules: [DESIGN.md](DESIGN.md).
 
 ---
 
@@ -86,14 +88,15 @@ npm run index
 ## Features
 
 ### Snippet management
-- Monaco Editor with syntax highlighting for 16+ languages
-- Inline tag editor — type and press Enter
-- Language filter sidebar with color-coded chips
-- Full-text search across title, description, and code body (SQLite FTS5)
-- Project workspaces with member access control
-- Visibility control: Private / Project / Shared
-- Command palette (Ctrl+K) — search snippets, projects, tags, and run actions
-- Copy to clipboard with one click; 2-second confirmation flash
+- Vault as a list with a code preview next to it, like a mail client
+- Monaco Editor with syntax highlighting for 16 languages
+- Tag editor — type and press Enter
+- Filters for language, project and tag
+- Full-text search across title, description and code (SQLite FTS5)
+- Projects with member access control
+- Visibility: Private / Project / Shared
+- Command palette (`Ctrl K`) — snippets, projects, tags and actions
+- Keyboard: `/` search, `N` new snippet, `↑ ↓` move, `Enter` open
 
 ### Encryption model
 Two modes — choose per snippet:
@@ -108,16 +111,15 @@ Sensitive mode: your private key is generated in the browser, encrypted with you
 ### Security
 - Rate limiting on auth and sensitive endpoints (express-rate-limit)
 - Request validation with Zod on all write routes
-- Security event log — every decrypt, share, export, and revoke action is recorded
+- Security event log — every share of a sensitive snippet is recorded
 - Sensitive snippet expiry — set a date/time after which the snippet is hidden and moved to the Expired tab
-- Encrypted backup / restore — AES-256-GCM with a user-supplied passphrase (server never sees the passphrase)
+- Encrypted backup / restore — AES-256-GCM, key derived from your passphrase on the server (scrypt). Use a passphrase only for backups
 
 ### RAG Search Assistant
 Ask natural-language questions across your snippet knowledge base:
-- Hybrid retrieval: BM25 keyword match (SQLite FTS5) + vector similarity (local embeddings via `@xenova/transformers`)
+- Hybrid retrieval: BM25 keyword match (SQLite FTS5) + vector search with [sqlite-vec](https://github.com/asg017/sqlite-vec) (local embeddings via `@huggingface/transformers`)
 - Citation-first — answers that don't cite a source snippet are blocked from rendering
-- Inline `[snippet:N]` references in answers are clickable chips — click to open a preview popup
-- Source chips at the bottom open a full snippet preview without navigating away
+- `#N` references and the source buttons select that snippet in the vault preview
 - Prompt-injection defenses on all retrieval paths
 - Sensitive encrypted snippets excluded from indexing
 
@@ -133,23 +135,20 @@ Per-snippet actions on the detail page:
 | **Refactor draft** | One suggested improvement — extract the code and apply it with one click |
 | **Convert to language** | Converts code to a selected target language; refuses clearly if the conversion isn't feasible (e.g. browser-only APIs) |
 
-All actions stream responses in a popup with:
-- Rendered markdown with syntax-highlighted code blocks
-- Language label + **Copy** button on every code block
-- For Refactor: **⬇ Apply & Save** button — applies the extracted code and saves the snippet
-- For Convert: **＋ Save as new snippet** button — auto-generates a title via AI Suggest, then creates a new private snippet in the target language
+All actions stream into a side sheet:
+- Markdown with language-labelled code blocks and a **Copy** button
+- Refactor: **Apply and save** writes the suggested code to the snippet
+- Convert: **Save as new snippet** gets a title from the model, then saves a new private snippet
 
-**AI Suggest** (in the snippet editor): click **✦ AI Suggest** next to the description field — Ollama reads your current code and fills in a proper title and description to improve RAG indexing.
+**Suggest title** (in the snippet editor) reads your code and fills title and description.
 
 ### UI
-- Space Grotesk font + JetBrains Mono for code
-- Dark-only mode with orange accent (`#ff6b00`) on `#0d1117` base
-- Subtle dot grid background pattern
-- Glass morphism cards with hover glow
-- Lucide icons throughout (consistent single-color)
-- Toast notifications for all actions
-- Custom confirm modals — no browser `confirm()` dialogs
-- Snippet preview popup — click any RAG citation to see title, description, code preview, and navigate to full view
+See [DESIGN.md](DESIGN.md). Short version:
+- IBM Plex Sans for UI, IBM Plex Mono for code, bundled (no font CDN)
+- Light and dark theme, follows the system setting
+- One blue accent, structure from 1px lines, no gradients or glow
+- Lucide icons, 16px
+- Every list and form has empty, loading and error states
 
 ---
 

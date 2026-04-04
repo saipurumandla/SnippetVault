@@ -1,20 +1,27 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { errorMessage } from '../lib/errors';
+import { longDate } from '../lib/dates';
+import { languageLabel } from '../lib/languages';
 import { useToast } from '../context/ToastContext';
 import Header from '../components/Header';
 import ConfirmModal from '../components/ConfirmModal';
-import styles from './ExpiredSnippets.module.css';
-import { errorMessage } from '../lib/errors';
 import type { Snippet } from '../types';
+import styles from './Table.module.css';
 
 export default function ExpiredSnippets() {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [confirmPurge, setConfirmPurge] = useState<number | null>(null);
   const { toast } = useToast();
 
   const load = () => {
-    api.get<Snippet[]>('/expired').then(setSnippets).catch(() => {}).finally(() => setLoading(false));
+    setLoadError('');
+    api.get<Snippet[]>('/expired')
+      .then(setSnippets)
+      .catch(err => setLoadError(errorMessage(err)))
+      .finally(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
 
@@ -23,7 +30,7 @@ export default function ExpiredSnippets() {
     setConfirmPurge(null);
     try {
       await api.del(`/expired/${id}`);
-      toast('Snippet purged', 'success');
+      toast('Snippet deleted for good', 'success');
       load();
     } catch (err) { toast(errorMessage(err), 'error'); }
   };
@@ -31,11 +38,11 @@ export default function ExpiredSnippets() {
   return (
     <div>
       <Header />
-      {confirmPurge && (
+      {confirmPurge !== null && (
         <ConfirmModal
-          title="Permanently purge snippet?"
-          message="This deletes the expired ciphertext from the database. It cannot be recovered."
-          confirmLabel="Purge"
+          title="Delete this expired snippet?"
+          message="The stored ciphertext is removed from the database. It can't be recovered."
+          confirmLabel="Delete for good"
           danger
           onConfirm={doPurge}
           onCancel={() => setConfirmPurge(null)}
@@ -43,34 +50,44 @@ export default function ExpiredSnippets() {
       )}
       <div className="page-content">
         <div className="page-header">
-          <h1 className="page-title">Expired Snippets</h1>
+          <h1 className="page-title">Expired snippets</h1>
         </div>
-        <div className={styles.notice}>
-          <span className="badge badge-sensitive">⏳ Expiry</span>
-          <p>Expired snippets are hidden from normal search and lists. Only you and project admins can see them here. They can be permanently purged or kept for forensic review.</p>
-        </div>
+        <p className={styles.intro}>
+          Expired snippets are hidden from the vault and search. They stay here until you delete them, so you can still check what was shared.
+        </p>
+
         {loading ? (
-          <p style={{ color: 'var(--text-muted)' }}>Loading…</p>
+          <p className={styles.note}>Loading…</p>
+        ) : loadError ? (
+          <div className={styles.note}>
+            <p>Could not load expired snippets: {loadError}</p>
+            <button className="btn-ghost" onClick={load}>Try again</button>
+          </div>
         ) : snippets.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">⏳</div>
-            <p className="empty-state-text">No expired snippets.</p>
-          </div>
+          <p className={styles.note}>Nothing has expired.</p>
         ) : (
-          <div className={styles.list}>
-            {snippets.map(s => (
-              <div key={s.id} className={`panel ${styles.row}`}>
-                <div>
-                  <p className={styles.title}>{s.title}</p>
-                  <p className={styles.meta}>Expired {s.expires_at ? new Date(s.expires_at).toLocaleString() : "unknown"} · {s.language}</p>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <span className="badge badge-danger">expired</span>
-                  <button className="btn-danger" onClick={() => setConfirmPurge(s.id)}>Purge</button>
-                </div>
-              </div>
-            ))}
-          </div>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Language</th>
+                <th>Expired</th>
+                <th className={styles.right}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {snippets.map(s => (
+                <tr key={s.id}>
+                  <td className={styles.strong}>{s.title}</td>
+                  <td className={styles.muted}>{languageLabel(s.language)}</td>
+                  <td className={styles.muted}>{s.expires_at ? longDate(s.expires_at) : '—'}</td>
+                  <td className={styles.right}>
+                    <button className="btn-danger" onClick={() => setConfirmPurge(s.id)}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>

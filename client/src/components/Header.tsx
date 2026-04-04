@@ -1,16 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { Plus, Search } from 'lucide-react';
+import { isTypingTarget } from '../lib/keyboard';
 import styles from './Header.module.css';
 
 interface Props {
   onSearch?: (value: string) => void;
   searchValue?: string;
-}
-
-function typingInField(target: EventTarget | null): boolean {
-  const el = target as HTMLElement | null;
-  return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
 }
 
 export default function Header({ onSearch, searchValue }: Props) {
@@ -19,7 +15,7 @@ export default function Header({ onSearch, searchValue }: Props) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (typingInField(e.target) || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isTypingTarget(e.target) || e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === '/' && onSearch) {
         e.preventDefault();
         inputRef.current?.focus();

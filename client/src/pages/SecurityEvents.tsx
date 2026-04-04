@@ -1,54 +1,75 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { errorMessage } from '../lib/errors';
+import { longDate } from '../lib/dates';
 import Header from '../components/Header';
-import styles from './SecurityEvents.module.css';
 import type { SecurityEvent } from '../types';
+import styles from './Table.module.css';
 
-const EVENT_COLORS: Record<string, string> = {
-  share: 'badge',
-  decrypt: 'badge',
-  export: 'badge',
-  revoke: 'badge-danger',
-  login: 'badge-ok',
-};
+function describe(e: SecurityEvent): string {
+  if (!e.meta) return '';
+  try {
+    const meta = JSON.parse(e.meta) as Record<string, unknown>;
+    if (typeof meta.recipientCount === 'number') return `${meta.recipientCount} recipient${meta.recipientCount === 1 ? '' : 's'}`;
+    return Object.entries(meta).map(([k, v]) => `${k}: ${String(v)}`).join(', ');
+  } catch {
+    return e.meta;
+  }
+}
 
 export default function SecurityEvents() {
   const [events, setEvents] = useState<SecurityEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
-  useEffect(() => {
-    api.get<SecurityEvent[]>('/security/events').then(setEvents).catch(() => {}).finally(() => setLoading(false));
-  }, []);
+  const load = () => {
+    setLoadError('');
+    api.get<SecurityEvent[]>('/security/events')
+      .then(setEvents)
+      .catch(err => setLoadError(errorMessage(err)))
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => { load(); }, []);
 
   return (
     <div>
       <Header />
       <div className="page-content">
         <div className="page-header">
-          <h1 className="page-title">Security Events</h1>
+          <h1 className="page-title">Security events</h1>
         </div>
-        <div className={styles.notice}>
-          <span className="badge">🛡 Audit Log</span>
-          <p>All decrypt, share, export, and revoke actions are recorded here. This log is append-only.</p>
-        </div>
+        <p className={styles.intro}>Every share of a sensitive snippet is recorded here. The app only adds to this log, it never changes it.</p>
+
         {loading ? (
-          <p style={{ color: 'var(--text-muted)' }}>Loading…</p>
+          <p className={styles.note}>Loading events…</p>
+        ) : loadError ? (
+          <div className={styles.note}>
+            <p>Could not load events: {loadError}</p>
+            <button className="btn-ghost" onClick={load}>Try again</button>
+          </div>
         ) : events.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">🛡</div>
-            <p className="empty-state-text">No security events recorded yet.</p>
-          </div>
+          <p className={styles.note}>No events yet. They appear when you share a sensitive snippet.</p>
         ) : (
-          <div className={styles.list}>
-            {events.map(e => (
-              <div key={e.id} className={`panel ${styles.event}`}>
-                <span className={`badge ${EVENT_COLORS[e.event_type] || 'badge'}`}>{e.event_type}</span>
-                <span className={styles.eventMeta}>{new Date(e.created_at).toLocaleString()}</span>
-                {e.snippet_id && <span className={styles.eventSnippet}>snippet #{e.snippet_id}</span>}
-                {e.meta && <span className={styles.eventDetail}>{e.meta}</span>}
-              </div>
-            ))}
-          </div>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Event</th>
+                <th>Snippet</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map(e => (
+                <tr key={e.id}>
+                  <td className={styles.muted}>{longDate(e.created_at)}</td>
+                  <td className={styles.strong}>{e.event_type}</td>
+                  <td>{e.snippet_id ? <a href={`/snippet/${e.snippet_id}`} className={styles.mono}>#{e.snippet_id}</a> : '—'}</td>
+                  <td className={styles.muted}>{describe(e)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>

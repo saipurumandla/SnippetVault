@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { TriangleAlert } from 'lucide-react';
 import { renderMarkdown } from '../lib/markdown';
 import { api } from '../lib/api';
 import styles from './RagPanel.module.css';
@@ -53,65 +54,48 @@ export default function RagPanel({ onCite }: { onCite: (snippetId: number) => vo
   );
 
   return (
-    <>
+    <div className={styles.panel}>
+      <form className={styles.form} onSubmit={handleAsk}>
+        <label className="sr-only" htmlFor="ask">Question</label>
+        <input
+          id="ask"
+          className="input"
+          placeholder="Ask about your snippets, for example: how do we retry http calls?"
+          value={question}
+          onChange={e => setQuestion(e.target.value)}
+          disabled={loading}
+          autoFocus
+        />
+        <button className="btn-primary" type="submit" disabled={loading || !question.trim()}>
+          {loading ? 'Asking…' : 'Ask'}
+        </button>
+      </form>
+      <p className={styles.hint}>Answers come from your local Ollama and only use snippets you can read.</p>
 
-      <div className={styles.panel}>
-        <div className={styles.header}>
-          <span className={styles.icon}>✦</span>
-          <span className={styles.title}>Ask about your snippets</span>
-          <span className="badge badge-sensitive" style={{ marginLeft: 'auto' }}>RAG · Local Ollama</span>
+      {error && <p className={styles.error} role="alert">{error}</p>}
+
+      {answer && (
+        <div className={styles.answer}>
+          {lowConfidence && (
+            <p className={styles.lowConf}>
+              <TriangleAlert size={14} strokeWidth={1.75} />
+              Not enough matching snippets. Try other words, or add the snippet first.
+            </p>
+          )}
+          <div ref={bodyRef} className={styles.answerText} dangerouslySetInnerHTML={{ __html: renderMarkdown(answer) }} />
+          {uniqueCitations.length > 0 && (
+            <div className={styles.sources}>
+              <span className={styles.sourcesLabel}>Sources</span>
+              {uniqueCitations.map(c => (
+                <button key={c.snippetId} className={styles.source} onClick={() => onCite(c.snippetId)}>
+                  {c.title}
+                  <span className={styles.sourceMeta}>#{c.snippetId}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-
-        <form className={styles.form} onSubmit={handleAsk}>
-          <input
-            className="input"
-            placeholder="e.g. How do I format a date? What snippets use async/await?"
-            value={question}
-            onChange={e => setQuestion(e.target.value)}
-            disabled={loading}
-          />
-          <button className="btn-primary" type="submit" disabled={loading || !question.trim()}>
-            {loading ? '…' : 'Ask'}
-          </button>
-        </form>
-
-        {error && <p className={styles.error}>{error}</p>}
-
-        {answer && (
-          <div className={styles.answerCard}>
-            {lowConfidence && (
-              <div className={styles.lowConf}>
-                ⚠ Low confidence — index more snippets or refine your question.
-              </div>
-            )}
-
-            <div
-              ref={bodyRef}
-              className={styles.answerText}
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(answer) }}
-            />
-
-            {uniqueCitations.length > 0 && (
-              <div className={styles.sources}>
-                <p className={styles.sourcesLabel}>Sources</p>
-                <div className={styles.sourceChips}>
-                  {uniqueCitations.map(c => (
-                    <button
-                      key={c.snippetId}
-                      className={styles.sourceChip}
-                      onClick={() => onCite(c.snippetId)}
-                    >
-                      <span className={styles.sourceId}>#{c.snippetId}</span>
-                      <span className={styles.sourceTitle}>{c.title}</span>
-                      {c.language && <span className={styles.sourceLang}>{c.language}</span>}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </>
+      )}
+    </div>
   );
 }

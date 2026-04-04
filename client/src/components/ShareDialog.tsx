@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { encryptForRecipient } from '../lib/crypto';
+import { useEscape } from './useEscape';
+import dialog from './Dialog.module.css';
 import styles from './ShareDialog.module.css';
 import { errorMessage } from '../lib/errors';
 import type { Snippet, UserSummary } from '../types';
@@ -26,6 +28,8 @@ export default function ShareDialog({ snippet, projectId, senderPrivateKey, onCl
       .then(data => setRecipients(data.filter(r => r.enc_public_key)))
       .catch(err => setError(errorMessage(err)));
   }, [projectId]);
+
+  useEscape(() => onClose(false));
 
   const toggleRecipient = (id: number) => {
     setSelected(prev => prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]);
@@ -61,47 +65,36 @@ export default function ShareDialog({ snippet, projectId, senderPrivateKey, onCl
   };
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.dialog}>
-        <h2 className={styles.title}>Share "{snippet.title}"</h2>
-        {error && <p className={styles.error}>{error}</p>}
+    <div className={dialog.overlay}>
+      <div className={`${dialog.dialog} ${dialog.wide}`} role="dialog" aria-modal="true" aria-labelledby="share-title">
+        <h2 id="share-title" className={dialog.title}>Share “{snippet.title}”</h2>
+        {error && <p className={dialog.error} role="alert">{error}</p>}
 
-        <p className={styles.label}>Recipients (must have secure mode enabled)</p>
-        {recipients.length === 0 ? (
-          <p className={styles.muted}>No eligible recipients in this project.</p>
-        ) : (
-          <div className={styles.recipientList}>
-            {recipients.map(r => (
+        <fieldset className={styles.recipients}>
+          <legend className="field-label">Recipients</legend>
+          {recipients.length === 0 ? (
+            <p className={dialog.text}>Nobody in this project has set up encryption yet.</p>
+          ) : (
+            recipients.map(r => (
               <label key={r.id} className={styles.recipient}>
-                <input
-                  type="checkbox"
-                  checked={selected.includes(r.id)}
-                  onChange={() => toggleRecipient(r.id)}
-                />
+                <input type="checkbox" checked={selected.includes(r.id)} onChange={() => toggleRecipient(r.id)} />
                 <span>{r.email}</span>
               </label>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </fieldset>
 
-        <label className={styles.expiryToggle}>
+        <label className={styles.recipient}>
           <input type="checkbox" checked={expiryEnabled} onChange={e => setExpiryEnabled(e.target.checked)} />
-          <span>Set expiry</span>
+          <span>Expire the snippet</span>
         </label>
         {expiryEnabled && (
-          <input
-            className={styles.dateInput}
-            type="datetime-local"
-            value={expiryDate}
-            onChange={e => setExpiryDate(e.target.value)}
-          />
+          <input className="input" type="datetime-local" aria-label="Expires at" value={expiryDate} onChange={e => setExpiryDate(e.target.value)} />
         )}
 
-        <div className={styles.actions}>
-          <button className={styles.cancel} onClick={() => onClose(false)}>Cancel</button>
-          <button className={styles.btn} onClick={handleShare} disabled={loading}>
-            {loading ? 'Sharing…' : 'Share'}
-          </button>
+        <div className={dialog.actions}>
+          <button className="btn-ghost" onClick={() => onClose(false)}>Cancel</button>
+          <button className="btn-primary" onClick={handleShare} disabled={loading}>{loading ? 'Sharing…' : 'Share'}</button>
         </div>
       </div>
     </div>
