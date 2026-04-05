@@ -3,7 +3,7 @@ import db from './db.js';
 import { config } from './config.js';
 import { encryptAesGcm, decryptAesGcm } from './crypto.js';
 
-// no MASTER_KEY means a new key every start, old project keys cant be read
+// no MASTER_KEY = new key each start, old keys lost
 const MASTER_KEY = config.masterKey
   ? Buffer.from(config.masterKey, 'hex')
   : crypto.randomBytes(32);

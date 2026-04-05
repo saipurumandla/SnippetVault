@@ -12,7 +12,7 @@ afterEach(() => {
 });
 
 vi.mock('@monaco-editor/react', () => ({
-  // monaco need a real browser, a textarea is enough for tests
+  // monaco need real browser, textarea is enough here
   default: ({ value, onChange }: { value: string; onChange?: (v: string) => void }) => (
     <textarea aria-label="code" value={value} onChange={e => onChange?.(e.target.value)} />
   ),

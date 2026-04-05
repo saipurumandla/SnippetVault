@@ -45,6 +45,14 @@ npm run build      # tsc for server, vite build for client
 npm start          # server from server/dist (run build first)
 ```
 
+Checks (same as CI):
+
+```bash
+npm run typecheck  # tsc for server and client
+npm run lint       # eslint, and stylelint for the design rules in DESIGN.md
+npm test           # vitest for server and client
+```
+
 Open **http://localhost:5173** in your browser.
 
 ---

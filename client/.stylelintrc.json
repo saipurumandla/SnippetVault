@@ -1,0 +1,30 @@
+{
+  "rules": {
+    "property-disallowed-list": ["backdrop-filter", "-webkit-backdrop-filter", "animation", "animation-name", "filter"],
+    "at-rule-disallowed-list": ["keyframes"],
+    "function-disallowed-list": [
+      "linear-gradient", "radial-gradient", "conic-gradient",
+      "repeating-linear-gradient", "repeating-radial-gradient",
+      "rgb", "rgba", "hsl", "hsla", "blur"
+    ],
+    "color-no-hex": true,
+    "color-named": "never",
+    "declaration-property-value-allowed-list": {
+      "box-shadow": ["none", "var(--shadow-float)", "inset 2px 0 0 var(--accent)"]
+    },
+    "declaration-property-value-disallowed-list": {
+      "/^border(-.*)?-radius$/": ["/^(?:[7-9]|[1-9]\\d+)px/", "/%/", "/em/"],
+      "background-clip": ["text"],
+      "-webkit-background-clip": ["text"]
+    }
+  },
+  "overrides": [
+    {
+      "files": ["src/styles/tokens.css"],
+      "rules": {
+        "color-no-hex": null,
+        "function-disallowed-list": null
+      }
+    }
+  ]
+}

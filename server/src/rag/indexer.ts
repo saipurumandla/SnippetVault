@@ -24,7 +24,7 @@ function buildIndexText(snippet: SnippetRow): string {
 }
 
 export function removeFromIndex(snippetId: number): void {
-  // vec0 is virtual table, foreign key cascade dont reach it
+  // vec0 is virtual table, cascade dont reach it
   db.prepare('DELETE FROM rag_vec WHERE chunk_id IN (SELECT id FROM rag_chunks WHERE snippet_id = ?)').run(snippetId);
   db.prepare('DELETE FROM rag_chunks WHERE snippet_id = ?').run(snippetId);
 }
@@ -45,7 +45,7 @@ export async function indexSnippet(snippet: SnippetRow, embedFn: EmbedFn): Promi
     removeFromIndex(snippet.id);
     chunks.forEach((chunk, i) => {
       const { lastInsertRowid } = insertChunk.run(snippet.id, snippet.project_id || null, i, chunk, now);
-      // sqlite-vec want integer rowid, plain js number bind as real
+      // sqlite-vec need integer rowid, number bind as real
       insertVec.run(BigInt(lastInsertRowid), Buffer.from(new Float32Array(vectors[i] as number[]).buffer));
     });
   })();

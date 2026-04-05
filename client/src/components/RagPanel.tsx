@@ -18,7 +18,7 @@ export default function RagPanel({ onCite }: { onCite: (snippetId: number) => vo
   useEffect(() => {
     const container = bodyRef.current;
     if (!container) return;
-    // chips come from renderMarkdown html, so listen on the container
+    // chips are raw html, so listen on container
     const handler = (e: MouseEvent) => {
       const chip = (e.target as HTMLElement).closest('.snip-ref');
       if (chip) {

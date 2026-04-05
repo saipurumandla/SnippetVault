@@ -62,7 +62,6 @@ button {
   }
 }
 
-/* buttons */
 
 .btn-primary,
 .btn-ghost,
@@ -117,7 +116,6 @@ button {
   cursor: not-allowed;
 }
 
-/* form controls */
 
 .input,
 .select {
@@ -177,7 +175,6 @@ button {
   color: var(--danger);
 }
 
-/* badges */
 
 .badge {
   display: inline-flex;
@@ -208,7 +205,6 @@ button {
   border-color: color-mix(in srgb, var(--ok) 45%, transparent);
 }
 
-/* panels and pages */
 
 .panel {
   background: var(--surface);
@@ -262,7 +258,6 @@ kbd {
   background: var(--paper);
 }
 
-/* markdown from ai answers */
 
 .md-code-block {
   margin: var(--s3) 0;

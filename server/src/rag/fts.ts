@@ -1,5 +1,4 @@
-// raw text in fts5 MATCH break on ? - " : and more,
-// so keep only word chars and quote each term
+// fts5 MATCH break on ? - " : so quote word chars only
 export function ftsTerms(text: string): string[] {
   return text.match(/[\p{L}\p{N}_]+/gu) ?? [];
 }

@@ -103,7 +103,7 @@ router.post('/', auth, validate(snippetSchema), (req, res) => {
     encryption_mode = 'standard', wrapped_key, expires_at,
   } = req.body as SnippetInput;
   const now = new Date().toISOString();
-  // sensitive code is already encrypted in browser, server only store it
+  // sensitive code come encrypted, server only store it
   const storedWrappedKey = encryption_mode === 'sensitive' ? (wrapped_key || null) : null;
 
   const result = db.prepare(`

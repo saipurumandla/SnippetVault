@@ -59,7 +59,7 @@ function vectorSearch(queryEmbedding: number[], userId: number, projectId: numbe
   let filter = '';
   if (projectId) { filter = ' AND s.project_id = ?'; params.push(projectId); }
 
-  // knn first, then access filter, so ask more candidates than TOP_K
+  // knn run before access filter, so ask for more
   const rows = db.prepare(`
     WITH knn AS (
       SELECT chunk_id, distance FROM rag_vec WHERE embedding MATCH ? AND k = ?

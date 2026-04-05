@@ -92,7 +92,7 @@ export function generateStream({ model, prompt, temperature = SAFE_TEMPERATURE, 
           if (parsed.response) onToken(parsed.response);
           if (parsed.done) onDone();
         } catch {
-          // half line from ollama, next chunk has the rest
+          // half line, next chunk has the rest
         }
       }
     });

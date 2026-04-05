@@ -64,7 +64,7 @@ export default function StreamResponse({ snippetId, action, model, language, tar
 
     es.onerror = () => { setError('Stream connection lost'); es.close(); setDone(true); };
     return () => es.close();
-  }, [snippetId, action, model]);
+  }, [snippetId, action, model, targetLanguage]);
 
   const handleApply = async () => {
     const extracted = extractCodeBlock(tokens);
