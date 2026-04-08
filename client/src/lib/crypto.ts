@@ -1,4 +1,4 @@
-import sodium from 'libsodium-wrappers';
+import sodium from 'libsodium-wrappers-sumo';
 
 export interface EncryptedKey {
   salt: string;
@@ -77,4 +77,46 @@ export async function decryptFromSender(payload: BoxPayload, senderPublicKeyB64:
   const cipher = sodium.from_base64(payload.ciphertext);
   const plain = sodium.crypto_box_open_easy(cipher, nonce, senderPk, myPk);
   return sodium.to_string(plain);
+}
+
+export const SEALED_WRAPPED_KEY = JSON.stringify({ scheme: 'sealed', v: 1 });
+
+export type SensitiveScheme = 'sealed' | 'shared' | 'plain';
+
+// 'plain' = saved before encryption worked, not encrypted
+export function sensitiveScheme(wrappedKey: string | null): SensitiveScheme {
+  if (!wrappedKey) return 'plain';
+  try {
+    const meta = JSON.parse(wrappedKey) as { scheme?: string; nonce?: string };
+    if (meta.scheme === 'sealed') return 'sealed';
+    if (meta.nonce) return 'shared';
+  } catch {
+    return 'plain';
+  }
+  return 'plain';
+}
+
+export async function sealForSelf(plaintext: string, publicKeyB64: string): Promise<string> {
+  await ready();
+  return sodium.to_base64(sodium.crypto_box_seal(plaintext, sodium.from_base64(publicKeyB64)));
+}
+
+export async function openSealed(ciphertextB64: string, publicKeyB64: string, privateKeyB64: string): Promise<string> {
+  await ready();
+  const plain = sodium.crypto_box_seal_open(
+    sodium.from_base64(ciphertextB64),
+    sodium.from_base64(publicKeyB64),
+    sodium.from_base64(privateKeyB64),
+  );
+  return sodium.to_string(plain);
+}
+
+export async function decryptSensitive(
+  code: string, wrappedKey: string | null, publicKeyB64: string, privateKeyB64: string,
+): Promise<string> {
+  const scheme = sensitiveScheme(wrappedKey);
+  if (scheme === 'plain') return code;
+  if (scheme === 'sealed') return openSealed(code, publicKeyB64, privateKeyB64);
+  const { nonce } = JSON.parse(wrappedKey as string) as { nonce: string };
+  return decryptFromSender({ ciphertext: code, nonce }, publicKeyB64, privateKeyB64);
 }

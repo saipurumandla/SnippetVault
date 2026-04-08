@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { app, request, newUser, newSnippet } from './helpers.js';
 
+const SEALED = JSON.stringify({ scheme: 'sealed', v: 1 });
+
 describe('backup', () => {
   it('needs a passphrase', async () => {
     const u = await newUser();
@@ -10,7 +12,7 @@ describe('backup', () => {
   it('exports and restores, without sensitive snippets', async () => {
     const u = await newUser();
     await newSnippet(u, { title: 'keep me' });
-    await newSnippet(u, { title: 'secret', encryption_mode: 'sensitive' });
+    await newSnippet(u, { title: 'secret', encryption_mode: 'sensitive', wrapped_key: SEALED });
 
     const exp = await request(app).get('/api/backup/export?passphrase=hunter22').set('Authorization', u.auth)
       .buffer(true).parse((res, cb) => { let d = ''; res.on('data', c => { d += c; }); res.on('end', () => cb(null, d)); });

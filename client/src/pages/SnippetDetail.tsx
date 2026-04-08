@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import Editor from '@monaco-editor/react';
 import { api } from '../lib/api';
-import { decryptFromSender } from '../lib/crypto';
+import { decryptSensitive, sensitiveScheme } from '../lib/crypto';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import PassphrasePrompt from '../components/PassphrasePrompt';
@@ -48,7 +48,9 @@ export default function SnippetDetail() {
     api.get<Snippet>(`/snippets/${id}`)
       .then(s => {
         setSnippet(s);
-        if (s.encryption_mode === 'sensitive') {
+        if (s.encryption_mode === 'sensitive' && sensitiveScheme(s.wrapped_key) === 'plain') {
+          setDecryptedCode(s.code);
+        } else if (s.encryption_mode === 'sensitive') {
           const key = sessionStorage.getItem(`unlockKey-${s.id}`);
           if (key) performDecrypt(s, key);
           else setShowPassphrase(true);
@@ -66,10 +68,9 @@ export default function SnippetDetail() {
 
   const performDecrypt = async (s: Snippet, privateKey: string) => {
     try {
-      const payload = (s.wrapped_key ? JSON.parse(s.wrapped_key) : {}) as { nonce?: string };
-      const senderPub = localStorage.getItem('encPublicKey');
-      if (!senderPub || !payload.nonce) throw new Error('missing key material');
-      const plain = await decryptFromSender({ ciphertext: s.code, nonce: payload.nonce }, senderPub, privateKey);
+      const publicKey = localStorage.getItem('encPublicKey');
+      if (!publicKey) throw new Error('no public key on this browser');
+      const plain = await decryptSensitive(s.code, s.wrapped_key, publicKey, privateKey);
       setDecryptedCode(plain);
       sessionStorage.setItem(`unlockKey-${s.id}`, privateKey);
       clearTimeout(unlockTimer.current);
@@ -244,6 +245,13 @@ export default function SnippetDetail() {
               <div className={styles.tags}>
                 {tags.map(t => <span key={t} className="badge">{t}</span>)}
               </div>
+            )}
+
+            {isSensitive && sensitiveScheme(snippet.wrapped_key) === 'plain' && (
+              <p className={styles.legacy} role="alert">
+                This snippet was saved before browser encryption worked, so it is stored as plain text on the server.
+                {' '}<a href={`/snippet/${snippet.id}/edit`}>Open it in the editor</a> and save once to encrypt it.
+              </p>
             )}
 
             {isLocked ? (

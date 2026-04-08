@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { app, request, newUser, newSnippet } from './helpers.js';
 
+const SEALED = JSON.stringify({ scheme: 'sealed', v: 1 });
+
 describe('snippets', () => {
   it('creates and reads a snippet', async () => {
     const u = await newUser();
@@ -99,7 +101,7 @@ describe('snippets', () => {
 
   it('hides expired snippets from the list', async () => {
     const u = await newUser();
-    const old = await newSnippet(u, { title: 'old one', encryption_mode: 'sensitive' });
+    const old = await newSnippet(u, { title: 'old one', encryption_mode: 'sensitive', wrapped_key: SEALED });
     await newSnippet(u, { title: 'still good' });
     await request(app).post(`/api/share/${old.id}`).set('Authorization', u.auth)
       .send({ recipients: [u.id], payload: { ciphertext: 'c', nonce: 'n' }, expires_at: '2020-01-01T00:00:00Z' });

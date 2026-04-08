@@ -1,13 +1,15 @@
 import { useState, useEffect, type KeyboardEvent } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import Editor from '@monaco-editor/react';
-import { ArrowLeft, Lock, X } from 'lucide-react';
+import { ArrowLeft, Lock, TriangleAlert, X } from 'lucide-react';
 import { api } from '../lib/api';
+import { SEALED_WRAPPED_KEY, decryptSensitive, sealForSelf, sensitiveScheme } from '../lib/crypto';
 import { errorMessage } from '../lib/errors';
 import { LANGUAGES } from '../lib/languages';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import Header from './Header';
+import PassphrasePrompt from './PassphrasePrompt';
 import type { EncryptionMode, Project, Snippet, Visibility } from '../types';
 import styles from './SnippetEditor.module.css';
 
@@ -39,6 +41,8 @@ export default function SnippetEditor() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
+  const [locked, setLocked] = useState<Snippet | null>(null);
+  const [legacyPlain, setLegacyPlain] = useState(false);
 
   useEffect(() => {
     api.get<Project[]>('/projects').then(setProjects).catch(() => {});
@@ -53,10 +57,35 @@ export default function SnippetEditor() {
         setEncryptionMode(s.encryption_mode || 'standard');
         setProjectId(s.project_id ? String(s.project_id) : '');
         setTags(s.tags.filter(Boolean));
+        if (s.encryption_mode !== 'sensitive') return;
+        const scheme = sensitiveScheme(s.wrapped_key);
+        if (scheme === 'shared') {
+          setLoadError('Shared sensitive snippets cannot be edited. Make a new snippet instead.');
+        } else if (scheme === 'plain') {
+          setLegacyPlain(true);
+        } else {
+          setCode('');
+          const key = sessionStorage.getItem(`unlockKey-${s.id}`);
+          if (key) unlock(s, key);
+          else setLocked(s);
+        }
       })
       .catch(err => setLoadError(errorMessage(err)))
       .finally(() => setLoading(false));
   }, [id, isNew]);
+
+  const unlock = async (s: Snippet, privateKey: string) => {
+    const publicKey = localStorage.getItem('encPublicKey');
+    try {
+      if (!publicKey) throw new Error('no public key');
+      setCode(await decryptSensitive(s.code, s.wrapped_key, publicKey, privateKey));
+      sessionStorage.setItem(`unlockKey-${s.id}`, privateKey);
+      setLocked(null);
+    } catch {
+      setLocked(null);
+      setLoadError('Could not decrypt this snippet with the key on this browser.');
+    }
+  };
 
   const addTag = () => {
     const t = tagInput.trim().toLowerCase();
@@ -94,16 +123,19 @@ export default function SnippetEditor() {
 
   const handleSave = async () => {
     if (!validate()) return;
-    if (encryptionMode === 'sensitive' && !localStorage.getItem('encPublicKey')) {
+    const publicKey = localStorage.getItem('encPublicKey');
+    if (encryptionMode === 'sensitive' && !publicKey) {
       toast('Set up encryption keys in Settings first', 'error');
       return;
     }
     setSaving(true);
     try {
+      const sensitive = encryptionMode === 'sensitive';
       const body = {
         title: title.trim(),
         description: description.trim() || undefined,
-        code,
+        code: sensitive ? await sealForSelf(code, publicKey as string) : code,
+        wrapped_key: sensitive ? SEALED_WRAPPED_KEY : undefined,
         language,
         visibility,
         encryption_mode: encryptionMode,
@@ -149,6 +181,9 @@ export default function SnippetEditor() {
   return (
     <div>
       <Header />
+      {locked && (
+        <PassphrasePrompt onUnlock={key => unlock(locked, key)} onCancel={() => navigate(`/snippet/${id}`)} />
+      )}
       <div className={styles.page}>
         <div className={styles.topBar}>
           <button className="btn-ghost" onClick={back}>
@@ -156,7 +191,7 @@ export default function SnippetEditor() {
             {isNew ? 'Vault' : 'Back'}
           </button>
           <h1 className={styles.heading}>{isNew ? 'New snippet' : 'Edit snippet'}</h1>
-          <button className="btn-primary" onClick={handleSave} disabled={saving || loading}>
+          <button className="btn-primary" onClick={handleSave} disabled={saving || loading || !!locked}>
             {saving ? 'Saving…' : 'Save snippet'}
           </button>
         </div>
@@ -209,8 +244,18 @@ export default function SnippetEditor() {
               </div>
             </div>
 
-            <fieldset className={styles.modes}>
-              <legend className="field-label">Storage</legend>
+            {legacyPlain && (
+              <p className={styles.warning} role="alert">
+                <TriangleAlert size={16} strokeWidth={1.75} />
+                This snippet was saved before browser encryption worked, so it is stored as plain text.
+                Save it once to encrypt it.
+              </p>
+            )}
+
+            <fieldset className={styles.modes} disabled={!isNew}>
+              <legend className="field-label">
+                Storage{!isNew && <span className={styles.legendNote}> (can't change after the snippet is created)</span>}
+              </legend>
               <label className={styles.mode}>
                 <input type="radio" name="mode" checked={!isSensitive} onChange={() => setEncryptionMode('standard')} />
                 <span>

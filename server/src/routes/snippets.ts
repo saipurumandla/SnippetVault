@@ -102,9 +102,13 @@ router.post('/', auth, validate(snippetSchema), (req, res) => {
     title, description, code, language, visibility = 'private', project_id,
     encryption_mode = 'standard', wrapped_key, expires_at,
   } = req.body as SnippetInput;
+  if (encryption_mode === 'sensitive' && !wrapped_key) {
+    res.status(400).json({ error: 'Sensitive snippets must be encrypted in the browser' });
+    return;
+  }
   const now = new Date().toISOString();
   // sensitive code come encrypted, server only store it
-  const storedWrappedKey = encryption_mode === 'sensitive' ? (wrapped_key || null) : null;
+  const storedWrappedKey = encryption_mode === 'sensitive' ? wrapped_key : null;
 
   const result = db.prepare(`
     INSERT INTO snippets (title, description, code, language, visibility, encryption_mode, wrapped_key, project_id, author_id, expires_at, created_at, updated_at)
@@ -123,7 +127,12 @@ router.put('/:id', auth, (req, res) => {
     res.status(404).json({ error: 'Not found' });
     return;
   }
-  const { title, description, code, language, visibility } = req.body as Partial<SnippetInput>;
+  const { title, description, code, language, visibility, wrapped_key } = req.body as Partial<SnippetInput>;
+  const sensitive = snippet.encryption_mode === 'sensitive';
+  if (sensitive && code !== undefined && !wrapped_key) {
+    res.status(400).json({ error: 'Sensitive snippets must be encrypted in the browser' });
+    return;
+  }
   const now = new Date().toISOString();
 
   if (code && code !== snippet.code && snippet.encryption_mode === 'standard') {
@@ -131,7 +140,7 @@ router.put('/:id', auth, (req, res) => {
   }
 
   db.prepare(`
-    UPDATE snippets SET title = ?, description = ?, code = ?, language = ?, visibility = ?, updated_at = ?
+    UPDATE snippets SET title = ?, description = ?, code = ?, language = ?, visibility = ?, wrapped_key = ?, updated_at = ?
     WHERE id = ?
   `).run(
     title ?? snippet.title,
@@ -139,6 +148,7 @@ router.put('/:id', auth, (req, res) => {
     code ?? snippet.code,
     language ?? snippet.language,
     visibility ?? snippet.visibility,
+    sensitive ? (wrapped_key ?? snippet.wrapped_key) : null,
     now,
     snippet.id,
   );

@@ -124,3 +124,11 @@
   color: var(--ink-muted);
   margin-bottom: var(--s3);
 }
+
+.legacy {
+  padding: var(--s3);
+  border: 1px solid color-mix(in srgb, var(--sensitive) 45%, transparent);
+  border-radius: var(--radius-sm);
+  background: var(--sensitive-soft);
+  font-size: var(--text-sm);
+}

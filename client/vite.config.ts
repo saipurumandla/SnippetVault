@@ -8,11 +8,11 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      'libsodium-wrappers': require.resolve('libsodium-wrappers'),
+      'libsodium-wrappers-sumo': require.resolve('libsodium-wrappers-sumo'),
     },
   },
   optimizeDeps: {
-    include: ['libsodium-wrappers'],
+    include: ['libsodium-wrappers-sumo'],
   },
   server: {
     proxy: {

@@ -17,3 +17,14 @@ function fakeEmbed(text) {
 }
 
 vi.mock('../src/rag/embedder.js', () => ({ embed: async (text) => fakeEmbed(text) }));
+
+// tests never talk to a real ollama, even if it run
+vi.mock('../src/ai/ollamaClient.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  health: async () => false,
+  generate: async ({ prompt }) => {
+    const id = prompt.match(/\[snippet:(\d+)\]/)?.[1];
+    return id ? `stub answer [snippet:${id}]` : 'stub answer';
+  },
+  generateStream: ({ onToken, onDone }) => { onToken('stub'); onDone(); },
+}));

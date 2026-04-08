@@ -1,13 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { app, request, newUser, newSnippet } from './helpers.js';
 
+const SEALED = JSON.stringify({ scheme: 'sealed', v: 1 });
+
 const payload = { ciphertext: 'Y2lwaGVy', nonce: 'bm9uY2U=' };
 
 describe('share', () => {
   it('shares a sensitive snippet and logs it', async () => {
     const u = await newUser();
     const other = await newUser();
-    const s = await newSnippet(u, { encryption_mode: 'sensitive', code: 'b64ciphertext', wrapped_key: 'wk' });
+    const s = await newSnippet(u, { encryption_mode: 'sensitive', code: 'b64ciphertext', wrapped_key: SEALED });
     const res = await request(app).post(`/api/share/${s.id}`).set('Authorization', u.auth)
       .send({ recipients: [other.id], payload });
     expect(res.body).toEqual({ ok: true });
@@ -26,7 +28,7 @@ describe('share', () => {
 
   it('needs at least one recipient', async () => {
     const u = await newUser();
-    const s = await newSnippet(u, { encryption_mode: 'sensitive' });
+    const s = await newSnippet(u, { encryption_mode: 'sensitive', wrapped_key: SEALED });
     const res = await request(app).post(`/api/share/${s.id}`).set('Authorization', u.auth).send({ recipients: [], payload });
     expect(res.status).toBe(400);
   });
@@ -47,8 +49,8 @@ describe('share', () => {
 describe('expired', () => {
   it('lists and deletes expired snippets', async () => {
     const u = await newUser();
-    const s = await newSnippet(u, { title: 'gone', encryption_mode: 'sensitive' });
-    const later = await newSnippet(u, { title: 'later', encryption_mode: 'sensitive' });
+    const s = await newSnippet(u, { title: 'gone', encryption_mode: 'sensitive', wrapped_key: SEALED });
+    const later = await newSnippet(u, { title: 'later', encryption_mode: 'sensitive', wrapped_key: SEALED });
     // expiry only can be set by share right now
     await request(app).post(`/api/share/${s.id}`).set('Authorization', u.auth)
       .send({ recipients: [u.id], payload, expires_at: '2021-05-01T00:00:00Z' });

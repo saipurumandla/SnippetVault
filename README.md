@@ -206,7 +206,9 @@ GET /ready    — DB connectivity check
 
 ## Security Notes
 
-- Sensitive snippet plaintext is never transmitted to the server
+- Sensitive snippet plaintext is never transmitted to the server (sealed box to your own public key, libsodium sumo build)
+- The server refuses a sensitive snippet that was not encrypted in the browser
+- Before v3.0.1 key setup failed (the standard libsodium build has no `crypto_pwhash`), and a sensitive snippet sent by the API was stored as plain text. Such snippets show a warning; open them in the editor and save once to encrypt them
 - Private keys are never sent over the network
 - Passphrase-derived key used to encrypt the private key locally (libsodium `pwhash`)
 - All AI actions reject sensitive snippets to prevent plaintext exposure

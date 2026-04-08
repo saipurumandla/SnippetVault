@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { app, request, newUser, newSnippet } from './helpers.js';
+
+const SEALED = JSON.stringify({ scheme: 'sealed', v: 1 });
 import db from '../src/db.ts';
 import { retrieve } from '../src/rag/retriever.ts';
 import { indexSnippet } from '../src/rag/indexer.ts';
@@ -26,7 +28,7 @@ describe('retriever on sqlite-vec', () => {
     const owner = await newUser();
     const other = await newUser();
     await indexed(owner, { title: 'Owner secret parser', code: 'parser parser parser' });
-    await indexed(other, { title: 'Other sensitive parser', code: 'parser', encryption_mode: 'sensitive' });
+    await indexed(other, { title: 'Other sensitive parser', code: 'parser', encryption_mode: 'sensitive', wrapped_key: SEALED });
     await indexed(other, { title: 'Other own parser', code: 'parser' });
     const { chunks } = await retrieve('parser', other.id);
     const titles = chunks.map(c => c.title);
