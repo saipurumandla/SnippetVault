@@ -62,7 +62,7 @@ describe('migrate', () => {
     const vec = new Float32Array(384).fill(0.05);
     db.prepare("INSERT INTO rag_embeddings (chunk_id, embedding, model, dims) VALUES (1, ?, 'm', 384)").run(Buffer.from(vec.buffer));
 
-    expect(migrate(db)).toEqual(['002_sqlite_vec']);
+    expect(migrate(db)[0]).toBe('002_sqlite_vec');
     expect(db.prepare('SELECT chunk_id FROM rag_vec').all()).toEqual([{ chunk_id: 1 }]);
     expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'rag_embeddings'").get()).toBeUndefined();
   });

@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Archive, FolderOpen, Clock, ShieldCheck, HardDrive, Settings2, BookOpen, LogOut, Sun, Moon } from 'lucide-react';
+import { Archive, FolderOpen, Clock, ShieldCheck, HardDrive, Settings2, BookOpen, LogOut, Sun, Moon, KeyRound } from 'lucide-react';
 import styles from './NavSidebar.module.css';
 
 const NAV = [
@@ -10,6 +10,7 @@ const NAV = [
   { to: '/expired',  Icon: Clock,        label: 'Expired' },
   { to: '/security', Icon: ShieldCheck,  label: 'Security' },
   { to: '/backup',   Icon: HardDrive,    label: 'Backup' },
+  { to: '/tokens',   Icon: KeyRound,     label: 'Access tokens' },
   { to: '/settings', Icon: Settings2,    label: 'Settings' },
   { to: '/docs',     Icon: BookOpen,     label: 'Docs' },
 ];

@@ -51,3 +51,15 @@ export interface UserSummary {
   email: string;
   enc_public_key: string | null;
 }
+
+export type TokenScope = 'read' | 'propose';
+
+export interface AccessToken {
+  id: number;
+  name: string;
+  prefix: string;
+  scopes: TokenScope[];
+  created_at: string;
+  last_used_at: string | null;
+  revoked_at: string | null;
+}

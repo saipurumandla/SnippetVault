@@ -17,6 +17,7 @@ import SecurityEvents from './pages/SecurityEvents';
 import BackupRestore from './pages/BackupRestore';
 import Settings from './pages/Settings';
 import Docs from './pages/Docs';
+import Tokens from './pages/Tokens';
 
 function PrivateRoute({ children }: { children: ReactNode }) {
   const { isAuthed } = useAuth();
@@ -55,6 +56,7 @@ function AppRoutes() {
         <Route path="/backup"         element={<PrivateRoute><BackupRestore /></PrivateRoute>} />
         <Route path="/settings"       element={<PrivateRoute><Settings /></PrivateRoute>} />
         <Route path="/docs"           element={<PrivateRoute><Docs /></PrivateRoute>} />
+        <Route path="/tokens"         element={<PrivateRoute><Tokens /></PrivateRoute>} />
       </Routes>
     </AppShell>
   );
