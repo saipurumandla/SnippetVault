@@ -66,3 +66,56 @@ describe('mcp search_snippets', () => {
     expect(res.content[0].text).toBe('No matching snippets.');
   });
 });
+
+describe('mcp get_snippet and list_tags', () => {
+  const SEALED = JSON.stringify({ scheme: 'sealed', v: 1 });
+
+  it('returns full code for a readable snippet', async () => {
+    const u = await newUser();
+    const s = await newSnippet(u, { title: 'Chunk list', code: 'def batches(items, n):\n    ...', language: 'python', description: 'split work' });
+    db.prepare('INSERT INTO snippet_tags (snippet_id, tag) VALUES (?, ?)').run(s.id, 'etl');
+    const client = await connect(u.id, ['read']);
+    const res = await client.callTool({ name: 'get_snippet', arguments: { id: s.id } });
+    expect(res.structuredContent).toMatchObject({ id: s.id, title: 'Chunk list', language: 'python', tags: ['etl'], code: 'def batches(items, n):\n    ...' });
+    expect(res.content[0].text).toContain('```python');
+  });
+
+  it('hides sensitive, expired and other people private snippets the same way', async () => {
+    const u = await newUser();
+    const other = await newUser();
+    const secret = await newSnippet(u, { title: 'secret', code: 'Y2lwaGVy', encryption_mode: 'sensitive', wrapped_key: SEALED });
+    const expired = await newSnippet(u, { title: 'old', code: 'x', expires_at: '2020-01-01T00:00:00Z' });
+    const foreign = await newSnippet(other, { title: 'not yours', code: 'x' });
+    const shared = await newSnippet(other, { title: 'shared one', code: 'x', visibility: 'shared' });
+    const client = await connect(u.id, ['read']);
+
+    for (const id of [secret.id, expired.id, foreign.id, 999999]) {
+      const res = await client.callTool({ name: 'get_snippet', arguments: { id } });
+      expect(res.isError).toBe(true);
+      expect(res.content[0].text).toBe(`No snippet #${id}.`);
+    }
+    const ok = await client.callTool({ name: 'get_snippet', arguments: { id: shared.id } });
+    expect(ok.structuredContent.title).toBe('shared one');
+  });
+
+  it('counts tags only on snippets the agent may read', async () => {
+    const u = await newUser();
+    const a = await newSnippet(u, { title: 'a', code: 'x' });
+    const b = await newSnippet(u, { title: 'b', code: 'x' });
+    const secret = await newSnippet(u, { title: 's', code: 'Y2lwaGVy', encryption_mode: 'sensitive', wrapped_key: SEALED });
+    for (const [id, tag] of [[a.id, 'http'], [b.id, 'http'], [b.id, 'retry'], [secret.id, 'prod-db']]) {
+      db.prepare('INSERT INTO snippet_tags (snippet_id, tag) VALUES (?, ?)').run(id, tag);
+    }
+    const client = await connect(u.id, ['read']);
+    const res = await client.callTool({ name: 'list_tags', arguments: {} });
+    expect(res.structuredContent.tags).toEqual([{ tag: 'http', count: 2 }, { tag: 'retry', count: 1 }]);
+  });
+
+  it('rag never retrieves expired snippets', async () => {
+    const { retrieve } = await import('../src/rag/retriever.ts');
+    const u = await newUser();
+    const s = await indexed(u, { title: 'Expired parser', code: 'parser parser', expires_at: '2020-01-01T00:00:00Z' });
+    const { chunks } = await retrieve('parser', u.id);
+    expect(chunks.find(c => c.snippet_id === s.id)).toBeUndefined();
+  });
+});

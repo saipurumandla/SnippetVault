@@ -1,6 +1,7 @@
 import db from '../db.js';
 import { embed } from './embedder.js';
 import { ftsAnyOf } from './fts.js';
+import { READABLE, readableParams } from '../access.js';
 
 const TOP_K = 10;
 const BM25_WEIGHT = 0.4;
@@ -24,17 +25,10 @@ export interface RetrieveResult {
   lowConfidence: boolean;
 }
 
-const ACCESS_FILTER = `(s.author_id = ? OR s.visibility = 'shared'
-      OR (s.visibility = 'project' AND s.project_id IN (
-        SELECT project_id FROM project_members WHERE user_id = ?
-      ))
-    )
-    AND s.encryption_mode = 'standard'`;
-
 function bm25Search(query: string, userId: number, projectId: number | null): RetrievedChunk[] {
   const ftsQuery = ftsAnyOf(query);
   if (!ftsQuery) return [];
-  const params: (string | number)[] = [ftsQuery, userId, userId];
+  const params: (string | number)[] = [ftsQuery, ...readableParams(userId)];
   let filter = '';
   if (projectId) { filter = ' AND s.project_id = ?'; params.push(projectId); }
 
@@ -46,7 +40,7 @@ function bm25Search(query: string, userId: number, projectId: number | null): Re
     WHERE s.id IN (
       SELECT rowid FROM snippets_fts WHERE snippets_fts MATCH ?
     )
-    AND ${ACCESS_FILTER}
+    AND ${READABLE}
     ${filter}
     LIMIT ${TOP_K}
   `).all(...params) as RetrievedChunk[];
@@ -55,7 +49,7 @@ function bm25Search(query: string, userId: number, projectId: number | null): Re
 const KNN_CANDIDATES = 50;
 
 function vectorSearch(queryEmbedding: number[], userId: number, projectId: number | null): RetrievedChunk[] {
-  const params: (Buffer | number)[] = [Buffer.from(new Float32Array(queryEmbedding).buffer), KNN_CANDIDATES, userId, userId];
+  const params: (Buffer | number | string)[] = [Buffer.from(new Float32Array(queryEmbedding).buffer), KNN_CANDIDATES, ...readableParams(userId)];
   let filter = '';
   if (projectId) { filter = ' AND s.project_id = ?'; params.push(projectId); }
 
@@ -69,7 +63,7 @@ function vectorSearch(queryEmbedding: number[], userId: number, projectId: numbe
     FROM knn
     JOIN rag_chunks rc ON rc.id = knn.chunk_id
     JOIN snippets s ON s.id = rc.snippet_id
-    WHERE ${ACCESS_FILTER}
+    WHERE ${READABLE}
     ${filter}
     ORDER BY knn.distance
     LIMIT ${TOP_K}
