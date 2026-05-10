@@ -1,4 +1,4 @@
-// what agents and rag may read: own, shared, project.
+// what agents and rag may read: own, shared, project
 // never sensitive, never expired. pair with readableParams()
 export const READABLE = `(s.author_id = ? OR s.visibility = 'shared'
     OR (s.visibility = 'project' AND s.project_id IN (

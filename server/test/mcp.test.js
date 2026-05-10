@@ -119,3 +119,47 @@ describe('mcp get_snippet and list_tags', () => {
     expect(chunks.find(c => c.snippet_id === s.id)).toBeUndefined();
   });
 });
+
+describe('mcp propose_snippet', () => {
+  const proposal = { title: 'Sleep helper', code: 'export const sleep = (ms) => new Promise(r => setTimeout(r, ms));', language: 'TypeScript', tags: ['Async', 'async', ' util '] };
+
+  it('writes to the drafts queue, never to snippets', async () => {
+    const u = await newUser();
+    const before = db.prepare('SELECT COUNT(*) AS n FROM snippets WHERE author_id = ?').get(u.id).n;
+    const client = await connect(u.id, ['read', 'propose']);
+    const res = await client.callTool({ name: 'propose_snippet', arguments: proposal });
+    expect(res.isError).toBeFalsy();
+    expect(res.structuredContent.status).toBe('pending');
+
+    const draft = db.prepare('SELECT * FROM snippet_drafts WHERE id = ?').get(res.structuredContent.draft_id);
+    expect(draft).toMatchObject({ user_id: u.id, source: 'test-client', title: 'Sleep helper', language: 'typescript', status: 'pending' });
+    expect(JSON.parse(draft.tags)).toEqual(['async', 'util']);
+    expect(db.prepare('SELECT COUNT(*) AS n FROM snippets WHERE author_id = ?').get(u.id).n).toBe(before);
+  });
+
+  it('needs the propose scope', async () => {
+    const u = await newUser();
+    const client = await connect(u.id, ['read']);
+    const res = await client.callTool({ name: 'propose_snippet', arguments: proposal });
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain('"propose" scope');
+  });
+
+  it('stops when too many drafts are waiting', async () => {
+    const u = await newUser();
+    const insert = db.prepare("INSERT INTO snippet_drafts (user_id, source, title, code, language, created_at) VALUES (?, 'x', 't', 'c', 'js', 'now')");
+    for (let i = 0; i < 50; i++) insert.run(u.id);
+    const client = await connect(u.id, ['propose']);
+    const res = await client.callTool({ name: 'propose_snippet', arguments: proposal });
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain('50 drafts');
+  });
+
+  it('rejects oversized input before it reaches the queue', async () => {
+    const u = await newUser();
+    const client = await connect(u.id, ['propose']);
+    const res = await client.callTool({ name: 'propose_snippet', arguments: { ...proposal, tags: Array(11).fill('x') } });
+    expect(res.isError).toBe(true);
+    expect(db.prepare('SELECT COUNT(*) AS n FROM snippet_drafts WHERE user_id = ?').get(u.id).n).toBe(0);
+  });
+});

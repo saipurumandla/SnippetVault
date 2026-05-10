@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { TokenOwner } from '../tokens.js';
 import { searchSnippets } from './search.js';
 import { getReadableSnippet, listReadableTags } from './read.js';
+import { MAX_PENDING, createDraft, pendingCount } from '../drafts.js';
 
 const hitShape = z.object({
   id: z.number(),
@@ -77,6 +78,31 @@ export function createVaultServer(owner: TokenOwner): McpServer {
     const tags = listReadableTags(owner.userId);
     const text = tags.length ? tags.map(t => `${t.tag} (${t.count})`).join(', ') : 'No tags yet.';
     return { content: [{ type: 'text', text }], structuredContent: { tags } };
+  });
+
+  server.registerTool('propose_snippet', {
+    title: 'Propose snippet',
+    description: 'Suggest a new snippet for the vault. It is NOT saved directly: it goes to a review queue and the user accepts, edits or rejects it.',
+    inputSchema: {
+      title: z.string().min(1).max(200).describe('Short title, e.g. "Retry fetch with backoff"'),
+      code: z.string().min(1).max(100_000),
+      language: z.string().min(1).max(40).describe('Language id, e.g. "typescript", "python", "bash"'),
+      description: z.string().max(1000).optional().describe('One or two sentences about what it is for'),
+      tags: z.array(z.string().min(1).max(40)).max(10).optional(),
+    },
+    outputSchema: { draft_id: z.number(), status: z.string() },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  }, async (input) => {
+    if (!can('propose')) return denied('propose');
+    if (pendingCount(owner.userId) >= MAX_PENDING) {
+      return { isError: true, content: [{ type: 'text', text: `There are already ${MAX_PENDING} drafts waiting for review. Ask the user to review them first.` }] };
+    }
+    const source = server.server.getClientVersion()?.name ?? 'unknown agent';
+    const draft = createDraft(owner.userId, owner.tokenId, source, input);
+    return {
+      content: [{ type: 'text', text: `Draft #${draft.id} is waiting for the user to review it in SnippetVault (Drafts).` }],
+      structuredContent: { draft_id: draft.id, status: draft.status },
+    };
   });
 
   return server;
