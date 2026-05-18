@@ -2,21 +2,14 @@ import express from 'express';
 import db from '../db.js';
 import auth from '../middleware/authMiddleware.js';
 import { snippetSchema, validate, type SnippetInput } from '../validation.js';
-import { indexSnippet, removeFromIndex } from '../rag/indexer.js';
-import { embed } from '../rag/embedder.js';
+import { removeFromIndex } from '../rag/indexer.js';
+import { createSnippet, reindex } from '../snippets.js';
 import { ftsPrefix } from '../rag/fts.js';
 import type { SnippetRow } from '../types.js';
 
 const router = express.Router();
 
 type SnippetWithTags = SnippetRow & { tags: string | null };
-
-function reindex(snippet: SnippetRow): void {
-  if (snippet.encryption_mode === 'sensitive') return;
-  indexSnippet(snippet, embed).catch((err: Error) =>
-    console.error('rag reindex failed for snippet', snippet.id, err.message),
-  );
-}
 
 function tagsOf(snippetId: number): string[] {
   return (db.prepare('SELECT tag FROM snippet_tags WHERE snippet_id = ?').all(snippetId) as { tag: string }[]).map(r => r.tag);
@@ -98,27 +91,12 @@ router.get('/:id', auth, (req, res) => {
 });
 
 router.post('/', auth, validate(snippetSchema), (req, res) => {
-  const {
-    title, description, code, language, visibility = 'private', project_id,
-    encryption_mode = 'standard', wrapped_key, expires_at,
-  } = req.body as SnippetInput;
+  const { encryption_mode, wrapped_key } = req.body as SnippetInput;
   if (encryption_mode === 'sensitive' && !wrapped_key) {
     res.status(400).json({ error: 'Sensitive snippets must be encrypted in the browser' });
     return;
   }
-  const now = new Date().toISOString();
-  // sensitive code come encrypted, server only store it
-  const storedWrappedKey = encryption_mode === 'sensitive' ? wrapped_key : null;
-
-  const result = db.prepare(`
-    INSERT INTO snippets (title, description, code, language, visibility, encryption_mode, wrapped_key, project_id, author_id, expires_at, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(title, description || null, code, language, visibility, encryption_mode, storedWrappedKey,
-    project_id || null, req.user!.id, expires_at || null, now, now);
-
-  const snippet = db.prepare('SELECT * FROM snippets WHERE id = ?').get(result.lastInsertRowid) as SnippetRow;
-  reindex(snippet);
-  res.status(201).json({ ...snippet, tags: [] });
+  res.status(201).json(createSnippet(req.user!.id, req.body as SnippetInput));
 });
 
 router.put('/:id', auth, (req, res) => {

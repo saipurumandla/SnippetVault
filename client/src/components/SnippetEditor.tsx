@@ -1,5 +1,5 @@
 import { useState, useEffect, type KeyboardEvent } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate, useSearchParams } from 'react-router';
 import Editor from '@monaco-editor/react';
 import { ArrowLeft, Lock, TriangleAlert, X } from 'lucide-react';
 import { api } from '../lib/api';
@@ -10,7 +10,7 @@ import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import Header from './Header';
 import PassphrasePrompt from './PassphrasePrompt';
-import type { EncryptionMode, Project, Snippet, Visibility } from '../types';
+import type { Draft, EncryptionMode, Project, Snippet, Visibility } from '../types';
 import styles from './SnippetEditor.module.css';
 
 interface FieldErrors {
@@ -24,6 +24,8 @@ export default function SnippetEditor() {
   const { theme } = useTheme();
   const { toast } = useToast();
   const isNew = !id || id === 'new';
+  const [searchParams] = useSearchParams();
+  const draftId = isNew ? searchParams.get('draft') : null;
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -46,6 +48,17 @@ export default function SnippetEditor() {
 
   useEffect(() => {
     api.get<Project[]>('/projects').then(setProjects).catch(() => {});
+    if (isNew && draftId) {
+      api.get<Draft>(`/drafts/${draftId}`)
+        .then(d => {
+          setTitle(d.title);
+          setDescription(d.description || '');
+          setCode(d.code);
+          setLanguage(d.language);
+          setTags(d.tags);
+        })
+        .catch(err => setLoadError(errorMessage(err)));
+    }
     if (isNew) return;
     api.get<Snippet>(`/snippets/${id}`)
       .then(s => {
@@ -72,7 +85,7 @@ export default function SnippetEditor() {
       })
       .catch(err => setLoadError(errorMessage(err)))
       .finally(() => setLoading(false));
-  }, [id, isNew]);
+  }, [id, isNew, draftId]);
 
   const unlock = async (s: Snippet, privateKey: string) => {
     const publicKey = localStorage.getItem('encPublicKey');
@@ -155,6 +168,10 @@ export default function SnippetEditor() {
       for (const t of tags) {
         await api.post(`/tags/${snippet.id}`, { tag: t }).catch(() => {});
       }
+      if (draftId) {
+        await api.post(`/drafts/${draftId}/accept`, { snippet_id: snippet.id });
+        window.dispatchEvent(new Event('drafts-changed'));
+      }
       toast(isNew ? 'Snippet created' : 'Snippet saved', 'success');
       navigate(`/snippet/${snippet.id}`);
     } catch (err) {
@@ -190,7 +207,7 @@ export default function SnippetEditor() {
             <ArrowLeft size={16} strokeWidth={1.75} />
             {isNew ? 'Vault' : 'Back'}
           </button>
-          <h1 className={styles.heading}>{isNew ? 'New snippet' : 'Edit snippet'}</h1>
+          <h1 className={styles.heading}>{draftId ? 'Review draft' : isNew ? 'New snippet' : 'Edit snippet'}</h1>
           <button className="btn-primary" onClick={handleSave} disabled={saving || loading || !!locked}>
             {saving ? 'Saving…' : 'Save snippet'}
           </button>

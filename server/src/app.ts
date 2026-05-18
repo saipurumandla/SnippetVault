@@ -18,6 +18,7 @@ import assistantRoutes from './routes/assistant.js';
 import streamRoutes from './routes/stream.js';
 import healthRoutes from './routes/health.js';
 import tokenRoutes from './routes/tokens.js';
+import draftRoutes from './routes/drafts.js';
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use('/api/security', securityRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/stream', streamRoutes);
 app.use('/api/tokens', tokenRoutes);
+app.use('/api/drafts', draftRoutes);
 app.use('/', healthRoutes);
 
 app.get('/api/ping', (req, res) => {

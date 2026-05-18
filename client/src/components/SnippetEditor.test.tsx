@@ -73,4 +73,22 @@ describe('SnippetEditor', () => {
     expect(JSON.parse(sent.wrapped_key)).toEqual({ scheme: 'sealed', v: 1 });
     expect(await openSealed(sent.code, publicKey, privateKey)).toBe('hunter2-very-secret');
   });
+
+  it('opens a draft and accepts it on save', async () => {
+    const calls = mockApi({
+      'GET /projects': [],
+      'GET /drafts/3': { id: 3, title: 'Sleep helper', description: 'wait', code: 'sleep(1)', language: 'python', tags: ['async'], source: 'cursor', status: 'pending', snippet_id: null, created_at: '2026-05-10T10:00:00Z' },
+      'POST /snippets': (body: unknown) => ({ id: 21, ...(body as object), tags: [] }),
+      'POST /tags/21': { ok: true },
+      'POST /drafts/3/accept': { snippet_id: 21 },
+    });
+    const user = userEvent.setup();
+    renderPage(<SnippetEditor />, { path: '/snippet/new?draft=3' });
+    expect(await screen.findByDisplayValue('Sleep helper')).toBeInTheDocument();
+    expect(screen.getByText('Review draft')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /save snippet/i }));
+    await waitFor(() => expect(calls.some(c => c.url === '/api/drafts/3/accept')).toBe(true));
+    expect(calls.find(c => c.url === '/api/drafts/3/accept')?.body).toEqual({ snippet_id: 21 });
+    expect(calls.find(c => c.url === '/api/snippets')?.body).toMatchObject({ title: 'Sleep helper', code: 'sleep(1)', language: 'python' });
+  });
 });

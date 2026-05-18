@@ -63,3 +63,17 @@ export interface AccessToken {
   last_used_at: string | null;
   revoked_at: string | null;
 }
+
+export interface Draft {
+  id: number;
+  source: string;
+  title: string;
+  description: string | null;
+  code: string;
+  language: string;
+  tags: string[];
+  status: 'pending' | 'accepted' | 'rejected';
+  snippet_id: number | null;
+  created_at: string;
+  possible_secret?: boolean;
+}

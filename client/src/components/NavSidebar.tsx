@@ -1,11 +1,14 @@
-import { NavLink, useNavigate } from 'react-router';
+import { useEffect, useState } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router';
+import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Archive, FolderOpen, Clock, ShieldCheck, HardDrive, Settings2, BookOpen, LogOut, Sun, Moon, KeyRound } from 'lucide-react';
+import { Archive, FolderOpen, Clock, ShieldCheck, HardDrive, Settings2, BookOpen, LogOut, Sun, Moon, KeyRound, Inbox } from 'lucide-react';
 import styles from './NavSidebar.module.css';
 
 const NAV = [
   { to: '/vault',    Icon: Archive,      label: 'Vault' },
+  { to: '/drafts',   Icon: Inbox,        label: 'Drafts' },
   { to: '/projects', Icon: FolderOpen,   label: 'Projects' },
   { to: '/expired',  Icon: Clock,        label: 'Expired' },
   { to: '/security', Icon: ShieldCheck,  label: 'Security' },
@@ -19,6 +22,15 @@ export default function NavSidebar() {
   const { logout } = useAuth();
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [pending, setPending] = useState(0);
+
+  useEffect(() => {
+    const refresh = () => { api.get<unknown[]>('/drafts').then(d => setPending(d.length)).catch(() => {}); };
+    refresh();
+    window.addEventListener('drafts-changed', refresh);
+    return () => window.removeEventListener('drafts-changed', refresh);
+  }, [location.pathname]);
 
   return (
     <nav className={styles.nav}>
@@ -35,6 +47,7 @@ export default function NavSidebar() {
           >
             <Icon size={16} strokeWidth={1.75} className={styles.linkIcon} />
             <span className={styles.linkLabel}>{label}</span>
+            {to === '/drafts' && pending > 0 && <span className={styles.count} aria-label={`${pending} waiting`}>{pending}</span>}
           </NavLink>
         ))}
       </div>
