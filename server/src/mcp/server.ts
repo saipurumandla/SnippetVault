@@ -97,7 +97,8 @@ export function createVaultServer(owner: TokenOwner): McpServer {
     if (pendingCount(owner.userId) >= MAX_PENDING) {
       return { isError: true, content: [{ type: 'text', text: `There are already ${MAX_PENDING} drafts waiting for review. Ask the user to review them first.` }] };
     }
-    const source = server.server.getClientVersion()?.name ?? 'unknown agent';
+    // stateless http has no initialize on this server, use token name then
+    const source = server.server.getClientVersion()?.name ?? owner.tokenName;
     const draft = createDraft(owner.userId, owner.tokenId, source, input);
     return {
       content: [{ type: 'text', text: `Draft #${draft.id} is waiting for the user to review it in SnippetVault (Drafts).` }],

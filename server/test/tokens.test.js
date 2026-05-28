@@ -25,7 +25,7 @@ describe('access tokens', () => {
     const u = await newUser();
     const { body } = await request(app).post('/api/tokens').set('Authorization', u.auth).send({ name: 'cursor', scopes: ['read', 'propose'] });
     const owner = verifyAccessToken(body.token);
-    expect(owner).toMatchObject({ userId: u.id, email: u.email, scopes: ['read', 'propose'] });
+    expect(owner).toMatchObject({ userId: u.id, email: u.email, tokenName: 'cursor', scopes: ['read', 'propose'] });
     expect(db.prepare('SELECT last_used_at FROM access_tokens WHERE id = ?').get(body.id).last_used_at).toBeTruthy();
 
     expect((await request(app).delete(`/api/tokens/${body.id}`).set('Authorization', u.auth)).status).toBe(204);

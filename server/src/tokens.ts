@@ -21,6 +21,7 @@ interface TokenRow extends Omit<AccessToken, 'scopes'> {
 
 export interface TokenOwner {
   tokenId: number;
+  tokenName: string;
   userId: number;
   email: string;
   scopes: Scope[];
@@ -63,11 +64,11 @@ export function revokeToken(userId: number, id: number): boolean {
 export function verifyAccessToken(token: string): TokenOwner | null {
   if (!token.startsWith(TOKEN_PREFIX)) return null;
   const row = db.prepare(`
-    SELECT t.id, t.user_id, t.scopes, u.email FROM access_tokens t
+    SELECT t.id, t.name, t.user_id, t.scopes, u.email FROM access_tokens t
     JOIN users u ON u.id = t.user_id
     WHERE t.token_hash = ? AND t.revoked_at IS NULL
-  `).get(hash(token)) as { id: number; user_id: number; scopes: string; email: string } | undefined;
+  `).get(hash(token)) as { id: number; name: string; user_id: number; scopes: string; email: string } | undefined;
   if (!row) return null;
   db.prepare('UPDATE access_tokens SET last_used_at = ? WHERE id = ?').run(new Date().toISOString(), row.id);
-  return { tokenId: row.id, userId: row.user_id, email: row.email, scopes: row.scopes.split(',') as Scope[] };
+  return { tokenId: row.id, tokenName: row.name, userId: row.user_id, email: row.email, scopes: row.scopes.split(',') as Scope[] };
 }
