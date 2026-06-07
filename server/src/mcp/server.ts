@@ -4,6 +4,8 @@ import type { TokenOwner } from '../tokens.js';
 import { searchSnippets } from './search.js';
 import { getReadableSnippet, listReadableTags } from './read.js';
 import { MAX_PENDING, createDraft, pendingCount } from '../drafts.js';
+import { logEvent } from '../securityLog.js';
+import { takeCall } from './rateLimit.js';
 
 const hitShape = z.object({
   id: z.number(),
@@ -18,9 +20,26 @@ function denied(scope: string) {
   return { isError: true, content: [{ type: 'text' as const, text: `This token does not have the "${scope}" scope.` }] };
 }
 
+function limited() {
+  return { isError: true, content: [{ type: 'text' as const, text: 'Too many tool calls for this token. Wait a minute and try again.' }] };
+}
+
 export function createVaultServer(owner: TokenOwner): McpServer {
   const server = new McpServer({ name: 'snippetvault', version: '3.1.0' });
   const can = (scope: string) => owner.scopes.includes(scope as TokenOwner['scopes'][number]);
+  const audit = (tool: string, ok: boolean, snippetId?: number | null, extra: Record<string, unknown> = {}) =>
+    logEvent(owner.userId, 'mcp_tool', snippetId, { tool, token: owner.tokenName, ok, ...extra });
+  const gate = (tool: string, scope: string) => {
+    if (!takeCall(owner.tokenId)) {
+      audit(tool, false, null, { reason: 'rate_limited' });
+      return limited();
+    }
+    if (!can(scope)) {
+      audit(tool, false, null, { reason: 'scope' });
+      return denied(scope);
+    }
+    return null;
+  };
 
   server.registerTool('search_snippets', {
     title: 'Search snippets',
@@ -33,8 +52,10 @@ export function createVaultServer(owner: TokenOwner): McpServer {
     outputSchema: { results: z.array(hitShape) },
     annotations: { readOnlyHint: true, openWorldHint: false },
   }, async ({ query, language, limit }) => {
-    if (!can('read')) return denied('read');
+    const stop = gate('search_snippets', 'read');
+    if (stop) return stop;
     const results = await searchSnippets(owner.userId, query, { language, limit });
+    audit('search_snippets', true, null, { results: results.length });
     const text = results.length
       ? results.map(r => `#${r.id} ${r.title} (${r.language})${r.tags.length ? ` [${r.tags.join(', ')}]` : ''}`).join('\n')
       : 'No matching snippets.';
@@ -57,8 +78,10 @@ export function createVaultServer(owner: TokenOwner): McpServer {
     },
     annotations: { readOnlyHint: true, openWorldHint: false },
   }, async ({ id }) => {
-    if (!can('read')) return denied('read');
+    const stop = gate('get_snippet', 'read');
+    if (stop) return stop;
     const snippet = getReadableSnippet(owner.userId, id);
+    audit('get_snippet', !!snippet, snippet ? id : null, snippet ? {} : { asked: id });
     // same answer for sensitive and missing, no probing
     if (!snippet) return { isError: true, content: [{ type: 'text', text: `No snippet #${id}.` }] };
     const header = `#${snippet.id} ${snippet.title} (${snippet.language})${snippet.description ? `\n${snippet.description}` : ''}`;
@@ -74,8 +97,10 @@ export function createVaultServer(owner: TokenOwner): McpServer {
     outputSchema: { tags: z.array(z.object({ tag: z.string(), count: z.number() })) },
     annotations: { readOnlyHint: true, openWorldHint: false },
   }, async () => {
-    if (!can('read')) return denied('read');
+    const stop = gate('list_tags', 'read');
+    if (stop) return stop;
     const tags = listReadableTags(owner.userId);
+    audit('list_tags', true);
     const text = tags.length ? tags.map(t => `${t.tag} (${t.count})`).join(', ') : 'No tags yet.';
     return { content: [{ type: 'text', text }], structuredContent: { tags } };
   });
@@ -93,13 +118,16 @@ export function createVaultServer(owner: TokenOwner): McpServer {
     outputSchema: { draft_id: z.number(), status: z.string() },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   }, async (input) => {
-    if (!can('propose')) return denied('propose');
+    const stop = gate('propose_snippet', 'propose');
+    if (stop) return stop;
     if (pendingCount(owner.userId) >= MAX_PENDING) {
+      audit('propose_snippet', false, null, { reason: 'queue_full' });
       return { isError: true, content: [{ type: 'text', text: `There are already ${MAX_PENDING} drafts waiting for review. Ask the user to review them first.` }] };
     }
-    // stateless http has no initialize on this server, use token name then
+    // stateless http skip initialize, use token name
     const source = server.server.getClientVersion()?.name ?? owner.tokenName;
     const draft = createDraft(owner.userId, owner.tokenId, source, input);
+    audit('propose_snippet', true, null, { draft: draft.id });
     return {
       content: [{ type: 'text', text: `Draft #${draft.id} is waiting for the user to review it in SnippetVault (Drafts).` }],
       structuredContent: { draft_id: draft.id, status: draft.status },

@@ -10,7 +10,7 @@ function rpcError(code: number, message: string) {
   return { jsonrpc: '2.0', error: { code, message }, id: null };
 }
 
-// agents dont send Origin, browsers always do. blocking it stop dns rebinding
+// browsers send Origin, agents dont. stop dns rebinding
 const noBrowsers: RequestHandler = (req, res, next) => {
   if (req.headers.origin) {
     res.status(403).json(rpcError(-32000, 'Browser requests are not allowed on /mcp'));

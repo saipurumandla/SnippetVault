@@ -10,6 +10,10 @@ function describe(e: SecurityEvent): string {
   if (!e.meta) return '';
   try {
     const meta = JSON.parse(e.meta) as Record<string, unknown>;
+    if (e.event_type === 'mcp_tool') {
+      const why = meta.ok ? '' : meta.reason === 'rate_limited' ? ', rate limited' : meta.reason === 'scope' ? ', missing scope' : meta.reason ? `, ${String(meta.reason)}` : ', not found';
+      return `${String(meta.tool)} via ${String(meta.token)}${why}`;
+    }
     if (typeof meta.recipientCount === 'number') return `${meta.recipientCount} recipient${meta.recipientCount === 1 ? '' : 's'}`;
     return Object.entries(meta).map(([k, v]) => `${k}: ${String(v)}`).join(', ');
   } catch {
@@ -38,7 +42,7 @@ export default function SecurityEvents() {
         <div className="page-header">
           <h1 className="page-title">Security events</h1>
         </div>
-        <p className={styles.intro}>Every share of a sensitive snippet is recorded here. The app only adds to this log, it never changes it.</p>
+        <p className={styles.intro}>Shares of sensitive snippets and every tool call from an agent (MCP) are recorded here. The app only adds to this log, it never changes it.</p>
 
         {loading ? (
           <p className={styles.note}>Loading events…</p>

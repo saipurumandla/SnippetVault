@@ -163,3 +163,39 @@ describe('mcp propose_snippet', () => {
     expect(db.prepare('SELECT COUNT(*) AS n FROM snippet_drafts WHERE user_id = ?').get(u.id).n).toBe(0);
   });
 });
+
+describe('mcp audit and limits', () => {
+  it('logs every tool call to security events', async () => {
+    const u = await newUser();
+    const s = await newSnippet(u, { title: 'Logged', code: 'x' });
+    const client = await connect(u.id, ['read']);
+    await client.callTool({ name: 'get_snippet', arguments: { id: s.id } });
+    await client.callTool({ name: 'get_snippet', arguments: { id: 424242 } });
+    await client.callTool({ name: 'propose_snippet', arguments: { title: 't', code: 'x', language: 'js' } });
+    const events = db.prepare("SELECT snippet_id, meta FROM security_events WHERE user_id = ? AND event_type = 'mcp_tool' ORDER BY id").all(u.id)
+      .map(e => ({ snippet_id: e.snippet_id, ...JSON.parse(e.meta) }));
+    expect(events).toEqual([
+      { snippet_id: s.id, tool: 'get_snippet', token: 'test agent', ok: true },
+      { snippet_id: null, tool: 'get_snippet', token: 'test agent', ok: false, asked: 424242 },
+      { snippet_id: null, tool: 'propose_snippet', token: 'test agent', ok: false, reason: 'scope' },
+    ]);
+  });
+
+  it('limits calls per token per minute', async () => {
+    const { takeCall, CALLS_PER_MINUTE } = await import('../src/mcp/rateLimit.ts');
+    const t0 = 1_000_000;
+    for (let i = 0; i < CALLS_PER_MINUTE; i++) expect(takeCall(777, t0 + i)).toBe(true);
+    expect(takeCall(777, t0 + 100)).toBe(false);
+    expect(takeCall(778, t0 + 100)).toBe(true);
+    expect(takeCall(777, t0 + 61_000)).toBe(true);
+  });
+
+  it('tells the agent when it is rate limited', async () => {
+    const u = await newUser();
+    const client = await connect(u.id, ['read']);
+    let last;
+    for (let i = 0; i < 61; i++) last = await client.callTool({ name: 'list_tags', arguments: {} });
+    expect(last.isError).toBe(true);
+    expect(last.content[0].text).toContain('Too many tool calls');
+  });
+});
