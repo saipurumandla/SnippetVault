@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import type { TokenOwner } from '../tokens.js';
+import { isTokenActive, type TokenOwner } from '../tokens.js';
 import { searchSnippets } from './search.js';
 import { getReadableSnippet, listReadableTags } from './read.js';
 import { MAX_PENDING, createDraft, pendingCount } from '../drafts.js';
@@ -20,6 +20,10 @@ function denied(scope: string) {
   return { isError: true, content: [{ type: 'text' as const, text: `This token does not have the "${scope}" scope.` }] };
 }
 
+function revoked() {
+  return { isError: true, content: [{ type: 'text' as const, text: 'This token was revoked. Ask the user for a new one.' }] };
+}
+
 function limited() {
   return { isError: true, content: [{ type: 'text' as const, text: 'Too many tool calls for this token. Wait a minute and try again.' }] };
 }
@@ -30,6 +34,8 @@ export function createVaultServer(owner: TokenOwner): McpServer {
   const audit = (tool: string, ok: boolean, snippetId?: number | null, extra: Record<string, unknown> = {}) =>
     logEvent(owner.userId, 'mcp_tool', snippetId, { tool, token: owner.tokenName, ok, ...extra });
   const gate = (tool: string, scope: string) => {
+    // stdio session live for days, check revoke each call
+    if (!isTokenActive(owner.tokenId)) return revoked();
     if (!takeCall(owner.tokenId)) {
       audit(tool, false, null, { reason: 'rate_limited' });
       return limited();

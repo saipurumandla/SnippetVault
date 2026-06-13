@@ -72,3 +72,7 @@ export function verifyAccessToken(token: string): TokenOwner | null {
   db.prepare('UPDATE access_tokens SET last_used_at = ? WHERE id = ?').run(new Date().toISOString(), row.id);
   return { tokenId: row.id, tokenName: row.name, userId: row.user_id, email: row.email, scopes: row.scopes.split(',') as Scope[] };
 }
+
+export function isTokenActive(tokenId: number): boolean {
+  return !!db.prepare('SELECT 1 FROM access_tokens WHERE id = ? AND revoked_at IS NULL').get(tokenId);
+}
