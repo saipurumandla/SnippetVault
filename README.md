@@ -160,6 +160,29 @@ See [DESIGN.md](DESIGN.md). Short version:
 
 ---
 
+## Agents (MCP)
+
+AI agents and editors (Cursor, VS Code, any MCP client) can use the vault as an MCP server: search
+snippets, read them, and suggest new ones. Suggestions wait in **Drafts** until you
+accept them, agents never write to the vault directly. Sensitive snippets are never
+visible to agents.
+
+```json
+{
+  "mcpServers": {
+    "snippetvault": {
+      "url": "http://localhost:3001/mcp",
+      "headers": { "Authorization": "Bearer sv_your_token" }
+    }
+  }
+}
+```
+
+Tokens are made under **Access tokens** in the app. Full setup, stdio mode and Cursor
+config and VS Code: [docs/mcp.md](docs/mcp.md).
+
+---
+
 ## Ollama Setup
 
 Install Ollama, then pull a model:

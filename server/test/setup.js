@@ -1,4 +1,8 @@
 import { vi } from 'vitest';
+import dotenv from 'dotenv';
+
+// fake keys for secret filter tests, see .env.test.example
+dotenv.config({ path: new URL('./.env.test', import.meta.url).pathname, quiet: true });
 
 process.env.DB_PATH = ':memory:';
 process.env.JWT_SECRET = 'test-secret';

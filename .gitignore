@@ -4,3 +4,6 @@ data/
 dist/
 client/dist/
 *.db
+
+# fake keys for tests, see server/test/.env.test.example
+server/test/.env.test

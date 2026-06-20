@@ -120,6 +120,29 @@ Projects group snippets for a team or a repo. Add members by email. Snippets wit
 
 ---
 
+## Agents (MCP)
+
+![Drafts from agents](docs/screenshots/12-drafts.png)
+
+Cursor, VS Code and other MCP clients can search and read the vault, and suggest
+new snippets. Suggestions land in **Drafts**. Accept, edit first, or reject.
+
+![Draft with a secret](docs/screenshots/12-02-drafts-secret.png)
+
+If a suggested snippet looks like it has a secret in it (API keys, tokens, private
+keys), Drafts says so before you save it as plain text.
+
+![Access tokens](docs/screenshots/13-access-tokens.png)
+
+Each agent gets its own token with `read` and/or `propose` scope. Revoke it and the
+agent stops on its next call.
+
+![Security events](docs/screenshots/14-security-events.png)
+
+Every tool call is logged with the token name. Setup: [docs/mcp.md](docs/mcp.md).
+
+---
+
 ## Storage modes
 
 | Mode | Stored as | Search | Assistant | Who can read |
@@ -141,5 +164,6 @@ Projects group snippets for a team or a repo. Add members by email. Snippets wit
 | Embeddings | @huggingface/transformers (all-MiniLM-L6-v2) |
 | Assistant | Ollama on your machine, qwen3-coder:30b by default |
 | Encryption | libsodium in the browser, AES-256-GCM for backups |
+| Agents | MCP server (stdio and Streamable HTTP), `@modelcontextprotocol/sdk` |
 | Tests | Vitest, Supertest, React Testing Library |
 | UI | IBM Plex Sans and Mono, Lucide icons, see [DESIGN.md](DESIGN.md) |

@@ -67,7 +67,7 @@ export default function SecurityEvents() {
               {events.map(e => (
                 <tr key={e.id}>
                   <td className={styles.muted}>{longDate(e.created_at)}</td>
-                  <td className={styles.strong}>{e.event_type}</td>
+                  <td className={styles.strong}>{e.event_type === 'mcp_tool' ? 'agent tool call' : e.event_type}</td>
                   <td>{e.snippet_id ? <a href={`/snippet/${e.snippet_id}`} className={styles.mono}>#{e.snippet_id}</a> : '—'}</td>
                   <td className={styles.muted}>{describe(e)}</td>
                 </tr>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Archive, FilePlus, Lock, FolderOpen, Search, Sparkles, HardDrive, ShieldCheck, type LucideIcon } from 'lucide-react';
+import { Archive, FilePlus, Lock, FolderOpen, Search, Sparkles, HardDrive, ShieldCheck, Plug, type LucideIcon } from 'lucide-react';
 import Header from '../components/Header';
 import styles from './Docs.module.css';
 
@@ -96,6 +96,20 @@ const SECTIONS: Section[] = [
       { type: 'p', text: 'Start Ollama. New and edited snippets are indexed when saved. To rebuild the whole index run npm run index from the project root.' },
       { type: 'heading', text: 'Safety rules' },
       { type: 'list', items: ['Sensitive encrypted snippets excluded from AI paths', 'Prompt-injection patterns refused before retrieval', 'Secret-like tokens redacted from responses', 'Uncited answers blocked from rendering'] },
+    ],
+  },
+  {
+    id: 'agents',
+    Icon: Plug,
+    title: 'Agents (MCP)',
+    body: [
+      { type: 'p', text: 'Cursor, VS Code and other MCP clients can search your snippets, read them and suggest new ones. They never save or change a snippet by themselves.' },
+      { type: 'heading', text: 'Connect' },
+      { type: 'list', items: ['Open Access tokens and make a token. read lets the agent search and read, propose lets it suggest snippets', 'Over HTTP: point the client at http://localhost:3001/mcp with the header Authorization: Bearer sv_...', 'Without a running server: point the agent at server/dist/mcp/stdio.js with SNIPPETVAULT_TOKEN and DB_PATH', 'Full setup for Cursor and VS Code is in docs/mcp.md in the repo'] },
+      { type: 'heading', text: 'Drafts' },
+      { type: 'p', text: 'A suggested snippet waits in Drafts. Accept saves it as a private snippet, Edit, then accept opens it in the editor first, Reject throws it away. If the code looks like it has a secret in it, Drafts warns you, use Edit, then accept and pick Sensitive.' },
+      { type: 'heading', text: 'What agents never see' },
+      { type: 'list', items: ['Sensitive snippets: not in search, not by id, not their tags', 'Expired snippets and private snippets of other people', 'Every tool call is in Security events with the token name. 60 calls a minute per token'] },
     ],
   },
   {
