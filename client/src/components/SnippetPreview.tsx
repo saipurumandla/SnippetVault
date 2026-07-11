@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Copy, Check, Pencil, Trash2, ExternalLink, Lock } from 'lucide-react';
-import { api } from '../lib/api';
+import { vault } from '../lib/vault';
 import { languageLabel } from '../lib/languages';
 import { longDate } from '../lib/dates';
 import { useToast } from '../context/ToastContext';
@@ -21,7 +21,7 @@ export default function SnippetPreview({ snippet, onDelete }: Props) {
 
   const copy = async () => {
     await navigator.clipboard.writeText(snippet.code);
-    api.post(`/snippets/${snippet.id}/copy`, {}).catch(() => {});
+    vault.snippets.copied(snippet.id).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
     toast('Code copied', 'success');

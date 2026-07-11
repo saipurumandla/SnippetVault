@@ -12,6 +12,7 @@ import Header from './Header';
 import PassphrasePrompt from './PassphrasePrompt';
 import type { Draft, EncryptionMode, Project, Snippet, Visibility } from '../types';
 import styles from './SnippetEditor.module.css';
+import { vault } from '../lib/vault';
 
 interface FieldErrors {
   title?: string;
@@ -47,7 +48,7 @@ export default function SnippetEditor() {
   const [legacyPlain, setLegacyPlain] = useState(false);
 
   useEffect(() => {
-    api.get<Project[]>('/projects').then(setProjects).catch(() => {});
+    vault.projects.list().then(setProjects).catch(() => {});
     if (isNew && draftId) {
       api.get<Draft>(`/drafts/${draftId}`)
         .then(d => {
@@ -60,7 +61,7 @@ export default function SnippetEditor() {
         .catch(err => setLoadError(errorMessage(err)));
     }
     if (isNew) return;
-    api.get<Snippet>(`/snippets/${id}`)
+    vault.snippets.get(Number(id))
       .then(s => {
         setTitle(s.title);
         setDescription(s.description || '');
@@ -156,17 +157,17 @@ export default function SnippetEditor() {
         expires_at: encryptionMode === 'sensitive' && expiresAt ? new Date(expiresAt).toISOString() : undefined,
       };
       const snippet = isNew
-        ? await api.post<Snippet>('/snippets', body)
-        : await api.put<Snippet>(`/snippets/${id}`, body);
+        ? await vault.snippets.create(body)
+        : await vault.snippets.update(Number(id), body);
 
       if (!isNew) {
-        const existing = await api.get<Snippet>(`/snippets/${id}`).then(s => s.tags || []);
+        const existing = await vault.snippets.get(Number(id)).then(s => s.tags || []);
         for (const t of existing.filter(t => !tags.includes(t))) {
-          await api.del(`/tags/${id}/${t}`).catch(() => {});
+          await vault.tags.remove(Number(id), t).catch(() => {});
         }
       }
       for (const t of tags) {
-        await api.post(`/tags/${snippet.id}`, { tag: t }).catch(() => {});
+        await vault.tags.add(snippet.id, t).catch(() => {});
       }
       if (draftId) {
         await api.post(`/drafts/${draftId}/accept`, { snippet_id: snippet.id });

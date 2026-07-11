@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { MessageSquareText, X } from 'lucide-react';
-import { api } from '../lib/api';
+import { vault } from '../lib/vault';
 import { errorMessage } from '../lib/errors';
 import { LANGUAGES } from '../lib/languages';
 import { useToast } from '../context/ToastContext';
@@ -37,16 +37,11 @@ export default function Vault() {
   const load = useCallback(async () => {
     setLoading(true);
     setFailed('');
-    const params = new URLSearchParams();
-    if (search) params.set('q', search);
-    if (language) params.set('language', language);
-    if (projectId) params.set('project_id', String(projectId));
     try {
-      const qs = params.toString() ? `?${params}` : '';
       const [list, projs, tagList] = await Promise.all([
-        api.get<Snippet[]>(`/snippets${qs}`),
-        api.get<Project[]>('/projects'),
-        api.get<string[]>('/tags'),
+        vault.snippets.list({ q: search || undefined, language: language || undefined, project_id: projectId ?? undefined }),
+        vault.projects.list(),
+        vault.tags.list(),
       ]);
       setSnippets(tag ? list.filter(s => s.tags.includes(tag)) : list);
       setProjects(projs);
@@ -95,7 +90,7 @@ export default function Vault() {
     setConfirmDelete(null);
     if (id === null) return;
     try {
-      await api.del(`/snippets/${id}`);
+      await vault.snippets.remove(id);
       setSnippets(prev => prev.filter(s => s.id !== id));
       toast('Snippet deleted', 'success');
     } catch (err) {

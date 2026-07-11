@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router';
-import { api } from '../lib/api';
+import { vault } from '../lib/vault';
 import { Plus, FolderOpen, ShieldCheck, HardDrive, Settings2, BookOpen, Archive, Tag, Search, type LucideIcon } from 'lucide-react';
 import styles from './CommandPalette.module.css';
 import type { Project, Snippet } from '../types';
@@ -57,9 +57,9 @@ export default function CommandPalette() {
     if (!open) return;
     setQuery('');
     setActive(0);
-    api.get<Snippet[]>('/snippets').then(setSnippets).catch(() => {});
-    api.get<Project[]>('/projects').then(setProjects).catch(() => {});
-    api.get<string[]>('/tags').then(setTags).catch(() => {});
+    vault.snippets.list().then(setSnippets).catch(() => {});
+    vault.projects.list().then(setProjects).catch(() => {});
+    vault.tags.list().then(setTags).catch(() => {});
     setTimeout(() => inputRef.current?.focus(), 30);
   }, [open]);
 
