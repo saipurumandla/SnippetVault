@@ -23,7 +23,7 @@ export interface UserSummary {
   enc_public_key: string | null;
 }
 
-export type TokenScope = 'read' | 'propose';
+export type TokenScope = 'read' | 'propose' | 'write';
 
 export interface AccessToken {
   id: number;

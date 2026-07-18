@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { type Request } from 'express';
 import db from '../db.js';
 import auth from '../middleware/authMiddleware.js';
 import { snippetSchema, validate, type SnippetInput } from '../validation.js';
@@ -19,14 +19,21 @@ function withTagList(rows: SnippetWithTags[]) {
   return rows.map(s => ({ ...s, tags: s.tags ? s.tags.split(',').filter(Boolean) : [] }));
 }
 
-function ownSnippet(id: number, userId: number): SnippetRow | undefined {
-  return db.prepare('SELECT * FROM snippets WHERE id = ? AND author_id = ?').get(id, userId) as SnippetRow | undefined;
+// cli and editor never see sensitive, they cant decrypt anyway
+function hiddenFrom(req: Request, snippet: SnippetRow) {
+  return !!req.token && snippet.encryption_mode === 'sensitive';
+}
+
+function ownSnippet(req: Request): SnippetRow | undefined {
+  const snippet = db.prepare('SELECT * FROM snippets WHERE id = ? AND author_id = ?').get(Number(req.params.id), req.user!.id) as SnippetRow | undefined;
+  return snippet && !hiddenFrom(req, snippet) ? snippet : undefined;
 }
 
 router.get('/', auth, (req, res) => {
   const { language, q, project_id } = req.query as { language?: string; q?: string; project_id?: string };
   const userId = req.user!.id;
   const now = new Date().toISOString();
+  const standardOnly = req.token ? " AND s.encryption_mode = 'standard'" : '';
 
   if (q && q.trim()) {
     const match = ftsPrefix(q);
@@ -43,7 +50,7 @@ router.get('/', auth, (req, res) => {
       FROM snippets s
       LEFT JOIN snippet_tags st ON st.snippet_id = s.id
       WHERE s.id IN (${placeholders}) AND s.author_id = ?
-        AND (s.expires_at IS NULL OR s.expires_at > ?)
+        AND (s.expires_at IS NULL OR s.expires_at > ?)${standardOnly}
       GROUP BY s.id
     `).all(...matchIds, userId, now) as SnippetWithTags[];
     res.json(withTagList(rows));
@@ -57,7 +64,7 @@ router.get('/', auth, (req, res) => {
     OR (s.visibility = 'project' AND s.project_id IN (
       SELECT project_id FROM project_members WHERE user_id = ?
     ))
-  ) AND (s.expires_at IS NULL OR s.expires_at > ?)`;
+  ) AND (s.expires_at IS NULL OR s.expires_at > ?)${standardOnly}`;
   if (language) { where += ' AND s.language = ?'; params.push(language); }
   if (project_id) { where += ' AND s.project_id = ?'; params.push(project_id); }
 
@@ -74,7 +81,7 @@ router.get('/', auth, (req, res) => {
 
 router.get('/:id', auth, (req, res) => {
   const snippet = db.prepare('SELECT * FROM snippets WHERE id = ?').get(req.params.id) as SnippetRow | undefined;
-  if (!snippet) {
+  if (!snippet || hiddenFrom(req, snippet)) {
     res.status(404).json({ error: 'Not found' });
     return;
   }
@@ -92,6 +99,10 @@ router.get('/:id', auth, (req, res) => {
 
 router.post('/', auth, validate(snippetSchema), (req, res) => {
   const { encryption_mode, wrapped_key } = req.body as SnippetInput;
+  if (encryption_mode === 'sensitive' && req.token) {
+    res.status(400).json({ error: 'Sensitive snippets can only be made in the web app' });
+    return;
+  }
   if (encryption_mode === 'sensitive' && !wrapped_key) {
     res.status(400).json({ error: 'Sensitive snippets must be encrypted in the browser' });
     return;
@@ -100,7 +111,7 @@ router.post('/', auth, validate(snippetSchema), (req, res) => {
 });
 
 router.put('/:id', auth, (req, res) => {
-  const snippet = ownSnippet(Number(req.params.id), req.user!.id);
+  const snippet = ownSnippet(req);
   if (!snippet) {
     res.status(404).json({ error: 'Not found' });
     return;
@@ -137,7 +148,7 @@ router.put('/:id', auth, (req, res) => {
 });
 
 router.delete('/:id', auth, (req, res) => {
-  const snippet = ownSnippet(Number(req.params.id), req.user!.id);
+  const snippet = ownSnippet(req);
   if (!snippet) {
     res.status(404).json({ error: 'Not found' });
     return;
@@ -150,7 +161,7 @@ router.delete('/:id', auth, (req, res) => {
 });
 
 router.post('/:id/copy', auth, (req, res) => {
-  const snippet = ownSnippet(Number(req.params.id), req.user!.id);
+  const snippet = ownSnippet(req);
   if (!snippet) {
     res.status(404).json({ error: 'Not found' });
     return;

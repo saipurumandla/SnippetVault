@@ -29,6 +29,7 @@ declare global {
   namespace Express {
     interface Request {
       user?: AuthUser;
+      token?: { id: number; name: string; scopes: string[] };
     }
   }
 }

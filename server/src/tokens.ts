@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import db from './db.js';
 
-export const SCOPES = ['read', 'propose'] as const;
+export const SCOPES = ['read', 'propose', 'write'] as const;
 export type Scope = (typeof SCOPES)[number];
 
 export interface AccessToken {

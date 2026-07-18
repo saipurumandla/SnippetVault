@@ -15,6 +15,14 @@ router.get('/', auth, (req, res) => {
   res.json(listTokens(req.user!.id));
 });
 
+router.get('/current', auth, (req, res) => {
+  if (!req.token) {
+    res.status(400).json({ error: 'Not an access token' });
+    return;
+  }
+  res.json({ name: req.token.name, scopes: req.token.scopes, email: req.user!.email });
+});
+
 router.post('/', auth, validate(createSchema), (req, res) => {
   const { name, scopes } = req.body as z.infer<typeof createSchema>;
   const { token, record } = createToken(req.user!.id, name, scopes);

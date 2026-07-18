@@ -1,0 +1,25 @@
+{
+  "name": "@snippetvault/cli",
+  "version": "3.2.0",
+  "private": true,
+  "description": "sv: save and find SnippetVault snippets from the terminal",
+  "type": "module",
+  "bin": {
+    "sv": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@snippetvault/api-client": "3.2.0",
+    "commander": "^15.0.0"
+  }
+}

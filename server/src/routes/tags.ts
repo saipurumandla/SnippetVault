@@ -4,8 +4,9 @@ import auth from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-function ownSnippet(snippetId: number, userId: number): { id: number } | undefined {
-  return db.prepare('SELECT id FROM snippets WHERE id = ? AND author_id = ?').get(snippetId, userId) as { id: number } | undefined;
+function ownSnippet(snippetId: number, userId: number, standardOnly: boolean): { id: number } | undefined {
+  const sql = `SELECT id FROM snippets WHERE id = ? AND author_id = ?${standardOnly ? " AND encryption_mode = 'standard'" : ''}`;
+  return db.prepare(sql).get(snippetId, userId) as { id: number } | undefined;
 }
 
 router.get('/', auth, (req, res) => {
@@ -13,7 +14,7 @@ router.get('/', auth, (req, res) => {
     SELECT DISTINCT st.tag
     FROM snippet_tags st
     JOIN snippets s ON s.id = st.snippet_id
-    WHERE s.author_id = ?
+    WHERE s.author_id = ?${req.token ? " AND s.encryption_mode = 'standard'" : ''}
     ORDER BY st.tag
   `).all(req.user!.id) as { tag: string }[];
   res.json(rows.map(r => r.tag));
@@ -25,7 +26,7 @@ router.post('/:snippetId', auth, (req, res) => {
     res.status(400).json({ error: 'tag is required' });
     return;
   }
-  const snippet = ownSnippet(Number(req.params.snippetId), req.user!.id);
+  const snippet = ownSnippet(Number(req.params.snippetId), req.user!.id, !!req.token);
   if (!snippet) {
     res.status(404).json({ error: 'Not found' });
     return;
@@ -35,7 +36,7 @@ router.post('/:snippetId', auth, (req, res) => {
 });
 
 router.delete('/:snippetId/:tag', auth, (req, res) => {
-  const snippet = ownSnippet(Number(req.params.snippetId), req.user!.id);
+  const snippet = ownSnippet(Number(req.params.snippetId), req.user!.id, !!req.token);
   if (!snippet) {
     res.status(404).json({ error: 'Not found' });
     return;

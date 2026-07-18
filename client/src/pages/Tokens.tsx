@@ -13,6 +13,7 @@ import styles from './Tokens.module.css';
 const SCOPE_INFO: Record<TokenScope, string> = {
   read: 'Search and read your snippets (never sensitive ones)',
   propose: 'Suggest new snippets. They wait in Drafts until you accept them',
+  write: 'Save, edit and delete your snippets, for the sv cli. Never sensitive ones',
 };
 
 export default function Tokens() {
@@ -98,7 +99,7 @@ export default function Tokens() {
           )}
         </div>
         <p className={table.intro}>
-          Tokens let AI agents and editors (Cursor, VS Code and other MCP clients) use your vault over MCP. See <a href="/docs">Docs</a> for setup.
+          Tokens let the sv command line and AI agents (Cursor, VS Code and other MCP clients) use your vault. See <a href="/docs">Docs</a> for setup.
         </p>
 
         {created && (

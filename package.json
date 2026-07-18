@@ -14,10 +14,10 @@
   "scripts": {
     "dev": "concurrently -n server,client \"npm run dev -w server\" \"npm run dev -w client\"",
     "start": "npm start -w server",
-    "build": "npm run build -w @snippetvault/api-client && npm run build -w server && npm run build -w client",
-    "typecheck": "npm run typecheck --workspaces --if-present",
+    "build": "npm run build -w @snippetvault/api-client && npm run build -w @snippetvault/cli && npm run build -w server && npm run build -w client",
+    "typecheck": "npm run build -w @snippetvault/api-client && npm run typecheck --workspaces --if-present",
     "lint": "eslint . && stylelint \"client/src/**/*.css\" --config client/.stylelintrc.json",
-    "test": "npm test --workspaces --if-present",
+    "test": "npm run build -w @snippetvault/api-client && npm test --workspaces --if-present",
     "migrate": "npm run migrate -w server",
     "index": "npm run index -w server"
   },
