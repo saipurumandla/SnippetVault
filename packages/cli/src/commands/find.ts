@@ -6,6 +6,8 @@ export interface FindOptions {
   lang?: string;
   project?: string;
   limit?: string;
+  tag?: string[];
+  json?: boolean;
 }
 
 const cut = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
@@ -26,11 +28,18 @@ export async function find(io: Io, words: string[], opts: FindOptions) {
     language: opts.lang,
     project_id: opts.project ? Number(opts.project) : undefined,
   });
-  const limited = rows.slice(0, Number(opts.limit ?? 20));
+  const tags = (opts.tag ?? []).map(t => t.toLowerCase());
+  const matching = tags.length ? rows.filter(r => tags.every(t => r.tags.includes(t))) : rows;
+  const limited = matching.slice(0, Number(opts.limit ?? 20));
+  if (opts.json) {
+    io.stdout.write(JSON.stringify(limited, null, 2) + '\n');
+    return;
+  }
   if (!limited.length) {
-    io.stderr.write(q ? `No snippets match "${q}"\n` : 'No snippets yet\n');
+    const filtered = q || tags.length || opts.lang || opts.project;
+    io.stderr.write(filtered ? 'No snippets match\n' : 'No snippets yet\n');
     return;
   }
   io.stdout.write(formatRows(limited));
-  if (rows.length > limited.length) io.stderr.write(`${rows.length - limited.length} more, use -n to see them\n`);
+  if (matching.length > limited.length) io.stderr.write(`${matching.length - limited.length} more, use -n to see them\n`);
 }

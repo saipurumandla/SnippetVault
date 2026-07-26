@@ -4,6 +4,7 @@ import { CliError, red, type Io } from './io.js';
 import { login } from './commands/login.js';
 import { save } from './commands/save.js';
 import { find } from './commands/find.js';
+import { get } from './commands/get.js';
 
 const collect = (value: string, prev: string[] = []) => [...prev, value];
 
@@ -36,8 +37,17 @@ export function buildProgram(io: Io) {
     .argument('[words...]', 'search words, empty lists everything')
     .option('-l, --lang <language>', 'only this language')
     .option('-p, --project <id>', 'only this project')
+    .option('--tag <tag>', 'only with this tag, can repeat', collect)
     .option('-n, --limit <n>', 'how many to show', '20')
+    .option('--json', 'print json, for scripts')
     .action((words, opts) => find(io, words, opts));
+
+  program.command('get')
+    .description('print the code of a snippet')
+    .argument('<id>', 'snippet id, from sv find')
+    .option('-c, --copy', 'copy to clipboard instead of printing')
+    .option('--json', 'print the whole snippet as json')
+    .action((id, opts) => get(io, id, opts));
 
   return program;
 }

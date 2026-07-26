@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@snippetvault/api-client": "3.2.0",
+    "clipboardy": "^5.3.2",
     "commander": "^15.0.0"
   }
 }
