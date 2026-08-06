@@ -1,0 +1,55 @@
+{
+  "name": "snippetvault",
+  "displayName": "SnippetVault",
+  "description": "Search your SnippetVault from the editor",
+  "version": "3.2.0",
+  "private": true,
+  "publisher": "snippetvault",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Snippets",
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "snippetvault.setToken",
+        "title": "Set access token",
+        "category": "SnippetVault"
+      },
+      {
+        "command": "snippetvault.signOut",
+        "title": "Sign out",
+        "category": "SnippetVault"
+      },
+      {
+        "command": "snippetvault.search",
+        "title": "Search vault",
+        "category": "SnippetVault"
+      }
+    ],
+    "configuration": {
+      "title": "SnippetVault",
+      "properties": {
+        "snippetvault.serverUrl": {
+          "type": "string",
+          "default": "http://localhost:3001",
+          "description": "Address of your SnippetVault server."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node20 --sourcemap",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@snippetvault/api-client": "3.2.0",
+    "@types/vscode": "1.100.0",
+    "esbuild": "^0.28.1"
+  }
+}
