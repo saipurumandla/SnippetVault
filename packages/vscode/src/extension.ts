@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { getVault, setToken, signOut } from './auth.js';
 import { pickSnippet } from './search.js';
 import { toEditorLanguage } from './languages.js';
+import { saveSelection, type SaveArgs } from './save.js';
 
 export function activate(context: vscode.ExtensionContext) {
   const { secrets } = context;
@@ -16,6 +17,10 @@ export function activate(context: vscode.ExtensionContext) {
       if (!snippet) return;
       const doc = await vscode.workspace.openTextDocument({ content: snippet.code, language: toEditorLanguage(snippet.language) });
       await vscode.window.showTextDocument(doc, { preview: true });
+    }),
+    vscode.commands.registerTextEditorCommand('snippetvault.saveSelection', async (editor, _edit, args?: SaveArgs) => {
+      const vault = await getVault(secrets);
+      if (vault) await saveSelection(vault, editor, args);
     }),
   );
 }

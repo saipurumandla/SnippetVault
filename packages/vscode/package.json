@@ -30,6 +30,11 @@
         "command": "snippetvault.search",
         "title": "Search vault",
         "category": "SnippetVault"
+      },
+      {
+        "command": "snippetvault.saveSelection",
+        "title": "Save selection as snippet",
+        "category": "SnippetVault"
       }
     ],
     "configuration": {
@@ -41,6 +46,21 @@
           "description": "Address of your SnippetVault server."
         }
       }
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "snippetvault.saveSelection",
+          "when": "editorHasSelection",
+          "group": "snippetvault@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "snippetvault.saveSelection",
+          "when": "editorIsOpen"
+        }
+      ]
     }
   },
   "scripts": {
