@@ -3,6 +3,8 @@ import { getVault, setToken, signOut } from './auth.js';
 import { pickSnippet } from './search.js';
 import { toEditorLanguage } from './languages.js';
 import { saveSelection, type SaveArgs } from './save.js';
+import { insertSnippet } from './insert.js';
+import { SnippetHover } from './hover.js';
 
 export function activate(context: vscode.ExtensionContext) {
   const { secrets } = context;
@@ -22,6 +24,11 @@ export function activate(context: vscode.ExtensionContext) {
       const vault = await getVault(secrets);
       if (vault) await saveSelection(vault, editor, args);
     }),
+    vscode.commands.registerTextEditorCommand('snippetvault.insert', async editor => {
+      const vault = await getVault(secrets);
+      if (vault) await insertSnippet(vault, editor);
+    }),
+    vscode.languages.registerHoverProvider({ scheme: '*' }, new SnippetHover(() => getVault(secrets, true))),
   );
 }
 

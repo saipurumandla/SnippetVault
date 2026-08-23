@@ -7,9 +7,10 @@ export function serverUrl(): string {
   return vscode.workspace.getConfiguration('snippetvault').get<string>('serverUrl', 'http://localhost:3001').replace(/\/+$/, '');
 }
 
-export async function getVault(secrets: vscode.SecretStorage): Promise<VaultClient | undefined> {
+export async function getVault(secrets: vscode.SecretStorage, quiet = false): Promise<VaultClient | undefined> {
   const token = await secrets.get(SECRET_KEY);
   if (!token) {
+    if (quiet) return undefined;
     const pick = await vscode.window.showWarningMessage('SnippetVault needs an access token first.', 'Set token');
     if (pick) await vscode.commands.executeCommand('snippetvault.setToken');
     return undefined;

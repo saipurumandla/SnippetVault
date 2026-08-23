@@ -35,6 +35,11 @@
         "command": "snippetvault.saveSelection",
         "title": "Save selection as snippet",
         "category": "SnippetVault"
+      },
+      {
+        "command": "snippetvault.insert",
+        "title": "Insert snippet",
+        "category": "SnippetVault"
       }
     ],
     "configuration": {
@@ -53,11 +58,20 @@
           "command": "snippetvault.saveSelection",
           "when": "editorHasSelection",
           "group": "snippetvault@1"
+        },
+        {
+          "command": "snippetvault.insert",
+          "when": "!editorReadonly",
+          "group": "snippetvault@2"
         }
       ],
       "commandPalette": [
         {
           "command": "snippetvault.saveSelection",
+          "when": "editorIsOpen"
+        },
+        {
+          "command": "snippetvault.insert",
           "when": "editorIsOpen"
         }
       ]
