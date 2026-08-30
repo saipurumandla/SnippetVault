@@ -10,6 +10,7 @@ export const config = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '24h',
   logLevel: process.env.LOG_LEVEL || 'info',
   masterKey: process.env.MASTER_KEY || '',
+  embeddings: process.env.EMBEDDINGS !== 'off',
 };
 
 export function isMain(metaUrl: string): boolean {

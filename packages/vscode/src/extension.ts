@@ -20,13 +20,16 @@ export function activate(context: vscode.ExtensionContext) {
       const doc = await vscode.workspace.openTextDocument({ content: snippet.code, language: toEditorLanguage(snippet.language) });
       await vscode.window.showTextDocument(doc, { preview: true });
     }),
-    vscode.commands.registerTextEditorCommand('snippetvault.saveSelection', async (editor, _edit, args?: SaveArgs) => {
-      const vault = await getVault(secrets);
-      if (vault) await saveSelection(vault, editor, args);
+    // registerTextEditorCommand dont wait for async
+    vscode.commands.registerCommand('snippetvault.saveSelection', async (args?: SaveArgs) => {
+      const editor = vscode.window.activeTextEditor;
+      const vault = editor && await getVault(secrets);
+      if (editor && vault) await saveSelection(vault, editor, args);
     }),
-    vscode.commands.registerTextEditorCommand('snippetvault.insert', async editor => {
-      const vault = await getVault(secrets);
-      if (vault) await insertSnippet(vault, editor);
+    vscode.commands.registerCommand('snippetvault.insert', async () => {
+      const editor = vscode.window.activeTextEditor;
+      const vault = editor && await getVault(secrets);
+      if (editor && vault) await insertSnippet(vault, editor);
     }),
     vscode.languages.registerHoverProvider({ scheme: '*' }, new SnippetHover(() => getVault(secrets, true))),
   );

@@ -1,5 +1,6 @@
 import db from '../db.js';
 import { embed } from './embedder.js';
+import { config } from '../config.js';
 import { ftsAnyOf } from './fts.js';
 import { READABLE, readableParams } from '../access.js';
 
@@ -78,7 +79,7 @@ export async function retrieve(query: string, userId: number, projectId: number 
     return { chunks: [], lowConfidence: true };
   }
 
-  const vecResults = vectorSearch(await embed(query), userId, projectId);
+  const vecResults = config.embeddings ? vectorSearch(await embed(query), userId, projectId) : [];
 
   const scores = new Map<number, number>();
   bm25Results.forEach((r, i) => {

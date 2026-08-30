@@ -5,5 +5,10 @@ dist/
 client/dist/
 *.db
 
+# vs code extension
+packages/vscode/out/
+packages/vscode/.vscode-test/
+*.vsix
+
 # fake keys for tests, see server/test/.env.test.example
 server/test/.env.test

@@ -1,11 +1,12 @@
 import db from './db.js';
+import { config } from './config.js';
 import { indexSnippet } from './rag/indexer.js';
 import { embed } from './rag/embedder.js';
 import type { SnippetInput } from './validation.js';
 import type { SnippetRow } from './types.js';
 
 export function reindex(snippet: SnippetRow): void {
-  if (snippet.encryption_mode === 'sensitive') return;
+  if (snippet.encryption_mode === 'sensitive' || !config.embeddings) return;
   indexSnippet(snippet, embed).catch((err: Error) =>
     console.error('rag reindex failed for snippet', snippet.id, err.message),
   );

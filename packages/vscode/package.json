@@ -79,11 +79,17 @@
   },
   "scripts": {
     "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node20 --sourcemap",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test",
+    "build:test": "esbuild test/suite/index.ts test/suite/extension.test.ts --bundle --outdir=out/suite --out-extension:.js=.cjs --external:vscode --external:mocha --format=cjs --platform=node --target=node20",
+    "test:vscode": "npm run build && npm run build:test && tsx test/runTest.mts"
   },
   "devDependencies": {
     "@snippetvault/api-client": "3.2.0",
+    "@snippetvault/server": "^0.1.0",
+    "@types/mocha": "^10.0.10",
     "@types/vscode": "1.100.0",
-    "esbuild": "^0.28.1"
+    "@vscode/test-electron": "^3.1.0",
+    "esbuild": "^0.28.1",
+    "mocha": "^11.8.0"
   }
 }
