@@ -21,6 +21,40 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  vscode:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build -w @snippetvault/api-client
+      # vs code need a display, even for tests
+      - run: xvfb-run -a npm run test:vscode -w snippetvault
+
+  package:
+    needs: [check, vscode]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run package -w snippetvault
+      - run: npm pack -w @snippetvault/cli --pack-destination packages/cli
+      - uses: actions/upload-artifact@v7
+        with:
+          name: snippetvault-cli-and-vscode
+          path: |
+            packages/vscode/*.vsix
+            packages/cli/*.tgz
+          if-no-files-found: error
+
   audit:
     runs-on: ubuntu-latest
     # report only, a new advisory should not block every push

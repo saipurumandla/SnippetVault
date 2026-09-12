@@ -5,7 +5,11 @@
   "version": "3.2.0",
   "private": true,
   "publisher": "snippetvault",
-  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/saipurumandla/SnippetVault",
+    "directory": "packages/vscode"
+  },
   "engines": {
     "vscode": "^1.100.0"
   },
@@ -81,7 +85,8 @@
     "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node20 --sourcemap",
     "typecheck": "tsc --noEmit && tsc --noEmit -p test",
     "build:test": "esbuild test/suite/index.ts test/suite/extension.test.ts --bundle --outdir=out/suite --out-extension:.js=.cjs --external:vscode --external:mocha --format=cjs --platform=node --target=node20",
-    "test:vscode": "npm run build && npm run build:test && tsx test/runTest.mts"
+    "test:vscode": "npm run build && npm run build:test && tsx test/runTest.mts",
+    "package": "vsce package --no-dependencies --skip-license"
   },
   "devDependencies": {
     "@snippetvault/api-client": "3.2.0",
@@ -89,6 +94,7 @@
     "@types/mocha": "^10.0.10",
     "@types/vscode": "1.100.0",
     "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^3.9.2",
     "esbuild": "^0.28.1",
     "mocha": "^11.8.0"
   }

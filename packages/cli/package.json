@@ -14,16 +14,17 @@
     "node": ">=24"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node24 --outfile=dist/index.js --external:clipboardy --external:commander",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
-    "@snippetvault/api-client": "3.2.0",
     "clipboardy": "^5.3.2",
     "commander": "^15.0.0"
   },
   "devDependencies": {
-    "@snippetvault/server": "0.1.0"
+    "@snippetvault/api-client": "3.2.0",
+    "@snippetvault/server": "0.1.0",
+    "esbuild": "^0.28.2"
   }
 }

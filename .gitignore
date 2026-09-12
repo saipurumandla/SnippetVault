@@ -9,6 +9,7 @@ client/dist/
 packages/vscode/out/
 packages/vscode/.vscode-test/
 *.vsix
+packages/cli/*.tgz
 
 # fake keys for tests, see server/test/.env.test.example
 server/test/.env.test
