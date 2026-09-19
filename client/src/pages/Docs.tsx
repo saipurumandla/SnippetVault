@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Archive, FilePlus, Lock, FolderOpen, Search, Sparkles, HardDrive, ShieldCheck, Plug, type LucideIcon } from 'lucide-react';
+import { Archive, FilePlus, Lock, FolderOpen, Search, Sparkles, HardDrive, ShieldCheck, Plug, Terminal, type LucideIcon } from 'lucide-react';
 import Header from '../components/Header';
 import styles from './Docs.module.css';
 
@@ -110,6 +110,19 @@ const SECTIONS: Section[] = [
       { type: 'p', text: 'A suggested snippet waits in Drafts. Accept saves it as a private snippet, Edit, then accept opens it in the editor first, Reject throws it away. If the code looks like it has a secret in it, Drafts warns you, use Edit, then accept and pick Sensitive.' },
       { type: 'heading', text: 'What agents never see' },
       { type: 'list', items: ['Sensitive snippets: not in search, not by id, not their tags', 'Expired snippets and private snippets of other people', 'Every tool call is in Security events with the token name. 60 calls a minute per token'] },
+    ],
+  },
+  {
+    id: 'everywhere',
+    Icon: Terminal,
+    title: 'Terminal and VS Code',
+    body: [
+      { type: 'p', text: 'The sv command and the VS Code extension use the same vault with an access token. Make one under Access tokens with read, and write if you want to save.' },
+      { type: 'heading', text: 'sv' },
+      { type: 'list', items: ['sv login, then paste the token', 'sv save file.sh --tag ops, or pipe code in with -t "title"', 'sv find words, sv get 12, sv get 12 --copy', '--json on find and get for scripts'] },
+      { type: 'heading', text: 'VS Code' },
+      { type: 'list', items: ['SnippetVault: Set access token, then Search vault, Insert snippet or Save selection as snippet', 'Hover snippetvault://12 in any file to see snippet 12', 'Setup for both is in docs/cli.md and docs/vscode.md in the repo'] },
+      { type: 'p', text: 'Sensitive snippets never show up in the terminal or the editor. They open only here, in the web app.' },
     ],
   },
   {

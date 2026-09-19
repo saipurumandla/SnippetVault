@@ -143,6 +143,34 @@ Every tool call is logged with the token name. Setup: [docs/mcp.md](docs/mcp.md)
 
 ---
 
+## Terminal and VS Code
+
+![Search from VS Code](docs/screenshots/15-vscode-search.png)
+
+The VS Code extension searches as you type and opens the snippet in a new tab.
+Insert snippet puts it at the cursor with your indent.
+
+![Hover a vault link](docs/screenshots/16-vscode-hover.png)
+
+`snippetvault://1` in a comment shows the snippet on hover.
+
+![Save selection](docs/screenshots/17-vscode-save.png)
+
+Select code, right click, **Save selection as snippet**. The language comes from the
+editor.
+
+```bash
+$ sv find retry
+#1  Retry fetch with exponential backoff                typescript  async, http
+$ sv get 1 --copy
+Copied #1 Retry fetch with exponential backoff
+```
+
+`sv` does the same from the terminal. Setup: [docs/cli.md](docs/cli.md),
+[docs/vscode.md](docs/vscode.md).
+
+---
+
 ## Storage modes
 
 | Mode | Stored as | Search | Assistant | Who can read |
@@ -165,5 +193,6 @@ Every tool call is logged with the token name. Setup: [docs/mcp.md](docs/mcp.md)
 | Assistant | Ollama on your machine, qwen3-coder:30b by default |
 | Encryption | libsodium in the browser, AES-256-GCM for backups |
 | Agents | MCP server (stdio and Streamable HTTP), `@modelcontextprotocol/sdk` |
+| Terminal and editor | `sv` CLI (commander), VS Code extension, one shared typed API client |
 | Tests | Vitest, Supertest, React Testing Library |
 | UI | IBM Plex Sans and Mono, Lucide icons, see [DESIGN.md](DESIGN.md) |

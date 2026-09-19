@@ -90,6 +90,7 @@ npm run index
 | `OLLAMA_PORT`         | 11434                | Ollama server port                           |
 | `OLLAMA_DEFAULT_MODEL`| qwen3-coder:30b      | Model used for explain/summarize/refactor     |
 | `RAG_MODEL`           | qwen3-coder:30b      | Model used for RAG answer generation         |
+| `EMBEDDINGS`          | on                   | `off` skips the embedding model, Ask your vault is off |
 
 ---
 
@@ -180,6 +181,23 @@ visible to agents.
 
 Tokens are made under **Access tokens** in the app. Full setup, stdio mode and Cursor
 config and VS Code: [docs/mcp.md](docs/mcp.md).
+
+---
+
+## Terminal and VS Code
+
+`sv` saves and finds snippets from the terminal, the VS Code extension searches,
+inserts and saves from the editor. Both use an access token with `read` and `write`.
+
+```bash
+sv login
+cat deploy.sh | sv save -t "Deploy to staging" --tag ops
+sv find deploy
+sv get 14 --copy
+```
+
+Setup and all options: [docs/cli.md](docs/cli.md) and [docs/vscode.md](docs/vscode.md).
+CI builds both as artifacts (`.vsix` and a `.tgz`), nothing is published.
 
 ---
 
