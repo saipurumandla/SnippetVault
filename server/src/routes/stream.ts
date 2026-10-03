@@ -2,7 +2,7 @@ import express from 'express';
 import type { RequestHandler } from 'express';
 import db from '../db.js';
 import { verifyToken } from '../middleware/authMiddleware.js';
-import { generateStream, DEFAULT_MODEL } from '../ai/ollamaClient.js';
+import { ollama, localModel } from '../ai/providers/index.js';
 import { explainPrompt, summarizePrompt, refactorPrompt, convertPrompt } from '../ai/prompts.js';
 import { filterToken, containsInjection } from '../ai/safetyFilters.js';
 import { retrieve, type RetrievedChunk } from '../rag/retriever.js';
@@ -41,7 +41,7 @@ function isAction(a: string): a is Action {
 router.get('/:action/:snippetId', sseAuth, async (req, res) => {
   const action = String(req.params.action);
   const snippetId = Number(req.params.snippetId);
-  const model = typeof req.query.model === 'string' ? req.query.model : DEFAULT_MODEL;
+  const requested = typeof req.query.model === 'string' ? req.query.model : undefined;
   const targetLang = typeof req.query.target_lang === 'string' ? req.query.target_lang : '';
 
   if (!isAction(action)) {
@@ -67,6 +67,14 @@ router.get('/:action/:snippetId', sseAuth, async (req, res) => {
     return;
   }
 
+  let model: string;
+  try {
+    model = await localModel(requested);
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+    return;
+  }
+
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -75,30 +83,21 @@ router.get('/:action/:snippetId', sseAuth, async (req, res) => {
   const { chunks } = await retrieve(snippet.title, req.user!.id, snippet.project_id).catch(() => ({ chunks: [] as RetrievedChunk[] }));
   const prompt = ACTION_PROMPTS[action](snippet, chunks, targetLang);
   const send = (data: unknown) => res.write(`data: ${JSON.stringify(data)}\n\n`);
-  let done = false;
+  const abort = new AbortController();
+  res.on('close', () => abort.abort());
 
-  generateStream({
-    model,
-    prompt,
-    temperature: action === 'refactor' || action === 'convert' ? 0.3 : 0.2,
-    onToken: (token) => {
-      if (!done) send({ token: filterToken(token) });
-    },
-    onDone: () => {
-      if (done) return;
-      done = true;
-      send({ done: true, citations: chunks.map(c => ({ snippetId: c.snippet_id, title: c.title })) });
-      res.end();
-    },
-    onError: (err) => {
-      if (done) return;
-      done = true;
-      send({ error: err.message });
-      res.end();
-    },
-  });
-
-  req.on('close', () => { done = true; });
+  try {
+    await ollama.stream({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: action === 'refactor' || action === 'convert' ? 0.3 : 0.2,
+      signal: abort.signal,
+    }, token => send({ token: filterToken(token) }));
+    send({ done: true, citations: chunks.map(c => ({ snippetId: c.snippet_id, title: c.title })) });
+  } catch (err) {
+    if (!abort.signal.aborted) send({ error: (err as Error).message });
+  }
+  res.end();
 });
 
 export default router;

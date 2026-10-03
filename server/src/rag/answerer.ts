@@ -1,4 +1,4 @@
-import { generate } from '../ai/ollamaClient.js';
+import { ollama, localModel } from '../ai/providers/index.js';
 import type { RetrievedChunk } from './retriever.js';
 
 export interface Citation {
@@ -7,9 +7,7 @@ export interface Citation {
   language: string;
 }
 
-const RAG_MODEL = process.env.RAG_MODEL || 'qwen3-coder:30b';
-
-const SYSTEM_PROMPT = `You are a code search assistant for SnippetVault. Answer questions about code snippets using only the context provided below.
+const SYSTEM_PROMPT = `You are a code search assistant for SnippetVault. Answer questions about code snippets using only the context given with the question.
 
 Rules:
 - Only use information present in the context
@@ -29,16 +27,15 @@ export async function generateAnswer(question: string, chunks: RetrievedChunk[])
     .map(c => `[snippet:${c.snippet_id}] ${c.title} (${c.language})\n${c.text}`)
     .join('\n\n---\n\n');
 
-  const prompt = `${SYSTEM_PROMPT}
-
-Context:
-${context}
-
-Question: ${question}
-
-Answer:`;
-
-  const answer = await generate({ model: RAG_MODEL, prompt, temperature: 0.2 });
+  const answer = await ollama.chat({
+    model: await localModel(process.env.RAG_MODEL),
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      // model forget the format when rules are only in system
+      { role: 'user', content: `Context:\n${context}\n\nQuestion: ${question}\n\nCite each snippet you use as [snippet:ID], like [snippet:${chunks[0]!.snippet_id}].` },
+    ],
+    temperature: 0.2,
+  });
 
   const citationMatches = [...answer.matchAll(/\[snippet:(\d+)\]/g)];
   const citedIds = [...new Set(citationMatches.map(m => parseInt(m[1] as string, 10)))];
