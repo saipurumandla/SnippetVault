@@ -48,3 +48,15 @@ export interface Draft {
   created_at: string;
   possible_secret?: boolean;
 }
+
+export type CloudProvider = 'anthropic' | 'openai';
+export type ProviderChoice = 'ollama' | CloudProvider;
+
+export interface AiSettings {
+  provider: ProviderChoice;
+  canStoreKeys: boolean;
+  keys: { provider: CloudProvider; last4: string; model: string; updated_at: string }[];
+  personalConsent: CloudProvider[];
+  projects: { id: number; name: string; consent: CloudProvider[] }[];
+  localModels: string[];
+}

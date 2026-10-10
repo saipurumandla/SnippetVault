@@ -57,3 +57,15 @@
   gap: var(--s3);
   color: var(--ink-muted);
 }
+
+.cloud {
+  display: flex;
+  gap: var(--s3);
+}
+
+.cloudOption {
+  display: flex;
+  gap: var(--s1);
+  align-items: center;
+  font-size: var(--text-sm);
+}

@@ -2,7 +2,7 @@ import express from 'express';
 import type { RequestHandler } from 'express';
 import db from '../db.js';
 import { verifyToken } from '../middleware/authMiddleware.js';
-import { ollama, localModel } from '../ai/providers/index.js';
+import { allowedSources, assertSources, assistantFor, CloudBlocked, type Assistant, type CloudId } from '../ai/cloud.js';
 import { explainPrompt, summarizePrompt, refactorPrompt, convertPrompt } from '../ai/prompts.js';
 import { filterToken, containsInjection } from '../ai/safetyFilters.js';
 import { retrieve, type RetrievedChunk } from '../rag/retriever.js';
@@ -67,11 +67,13 @@ router.get('/:action/:snippetId', sseAuth, async (req, res) => {
     return;
   }
 
-  let model: string;
+  let assistant: Assistant;
   try {
-    model = await localModel(requested);
+    assistant = await assistantFor(req.user!.id, requested);
+    // check before sse headers, so client get a normal 403
+    if (assistant.provider.cloud) assertSources(assistant.provider.id as CloudId, [snippet.id]);
   } catch (err) {
-    res.status(400).json({ error: (err as Error).message });
+    res.status(err instanceof CloudBlocked ? 403 : 400).json({ error: (err as Error).message });
     return;
   }
 
@@ -80,18 +82,20 @@ router.get('/:action/:snippetId', sseAuth, async (req, res) => {
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
-  const { chunks } = await retrieve(snippet.title, req.user!.id, snippet.project_id).catch(() => ({ chunks: [] as RetrievedChunk[] }));
+  const { chunks: found } = await retrieve(snippet.title, req.user!.id, snippet.project_id).catch(() => ({ chunks: [] as RetrievedChunk[] }));
+  const chunks = allowedSources(assistant, found);
   const prompt = ACTION_PROMPTS[action](snippet, chunks, targetLang);
   const send = (data: unknown) => res.write(`data: ${JSON.stringify(data)}\n\n`);
   const abort = new AbortController();
   res.on('close', () => abort.abort());
 
   try {
-    await ollama.stream({
-      model,
+    await assistant.provider.stream({
+      model: assistant.model,
       messages: [{ role: 'user', content: prompt }],
       temperature: action === 'refactor' || action === 'convert' ? 0.3 : 0.2,
       signal: abort.signal,
+      sourceIds: [snippet.id, ...chunks.map(c => c.snippet_id)],
     }, token => send({ token: filterToken(token) }));
     send({ done: true, citations: chunks.map(c => ({ snippetId: c.snippet_id, title: c.title })) });
   } catch (err) {

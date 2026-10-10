@@ -11,6 +11,8 @@ export interface ChatRequest {
   temperature?: number;
   maxTokens?: number;
   signal?: AbortSignal;
+  // snippets used in the prompt, cloud guard checks them
+  sourceIds?: number[];
 }
 
 export interface ModelProvider {

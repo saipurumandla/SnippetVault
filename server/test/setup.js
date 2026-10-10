@@ -7,6 +7,7 @@ dotenv.config({ path: new URL('./.env.test', import.meta.url).pathname, quiet: t
 process.env.DB_PATH = ':memory:';
 process.env.JWT_SECRET = 'test-secret';
 process.env.LOG_LEVEL = 'silent';
+process.env.MASTER_KEY = 'ab'.repeat(32);
 
 // real embedder download a 90mb model, too slow for tests
 function fakeEmbed(text) {

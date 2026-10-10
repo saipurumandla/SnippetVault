@@ -22,6 +22,19 @@ export function getOrCreateProjectKey(projectId: number): Buffer {
   return projectKey;
 }
 
+export function canStoreSecrets(): boolean {
+  return !!config.masterKey;
+}
+
+export function sealSecret(text: string): string {
+  if (!canStoreSecrets()) throw new Error('Set MASTER_KEY in .env before saving API keys');
+  return encryptAesGcm(text, MASTER_KEY);
+}
+
+export function openSecret(sealed: string): string {
+  return decryptAesGcm(sealed, MASTER_KEY);
+}
+
 export function getPersonalKey(userId: number): Buffer {
   return crypto.createHash('sha256').update(`user-${userId}-${MASTER_KEY.toString('hex')}`).digest();
 }

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Check } from 'lucide-react';
-import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import EncryptionSetup from '../components/EncryptionSetup';
+import AssistantSettings from '../components/AssistantSettings';
 import Header from '../components/Header';
 import styles from './Settings.module.css';
 
@@ -13,20 +13,7 @@ export default function Settings() {
   const { theme, toggle } = useTheme();
   const { toast } = useToast();
   const [showEncSetup, setShowEncSetup] = useState(false);
-  const [checking, setChecking] = useState(false);
   const hasKeys = !!localStorage.getItem('encPublicKey');
-
-  const checkOllama = async () => {
-    setChecking(true);
-    try {
-      const d = await api.get<{ available: boolean; models: string[] }>('/assistant/models');
-      toast(d.available ? `Ollama is running, ${d.models.length} models allowed` : 'Ollama is not reachable', d.available ? 'success' : 'warning');
-    } catch {
-      toast('Could not check Ollama', 'error');
-    } finally {
-      setChecking(false);
-    }
-  };
 
   return (
     <div>
@@ -71,19 +58,16 @@ export default function Settings() {
           </div>
         </section>
 
-        <section className={styles.section}>
+        <section className={styles.sectionWide}>
           <div>
-            <h2 className={styles.sectionTitle}>Assistant</h2>
+            <h2 className={styles.sectionTitle}>Assistant model</h2>
             <p className={styles.sectionDesc}>
-              Runs on your own Ollama, default model <code>qwen3-coder:30b</code>.
-              Change it with <code>OLLAMA_DEFAULT_MODEL</code> in <code>.env</code>.
+              Local Ollama is the default and nothing leaves this server. A cloud model uses your
+              own API key and only sees snippets you allowed. The key is stored encrypted and is
+              never shown again.
             </p>
           </div>
-          <div className={styles.controls}>
-            <button className="btn-ghost" onClick={checkOllama} disabled={checking}>
-              {checking ? 'Checking…' : 'Check Ollama'}
-            </button>
-          </div>
+          <AssistantSettings />
         </section>
 
         <section className={styles.section}>

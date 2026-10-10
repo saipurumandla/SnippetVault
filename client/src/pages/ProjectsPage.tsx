@@ -5,7 +5,8 @@ import { errorMessage } from '../lib/errors';
 import { shortDate } from '../lib/dates';
 import { useToast } from '../context/ToastContext';
 import Header from '../components/Header';
-import type { Project, UserSummary } from '../types';
+import { CLOUD } from '../lib/providers';
+import type { AiSettings, CloudProvider, Project, UserSummary } from '../types';
 import styles from './ProjectsPage.module.css';
 
 export default function ProjectsPage() {
@@ -17,6 +18,7 @@ export default function ProjectsPage() {
   const [nameError, setNameError] = useState('');
   const [description, setDescription] = useState('');
   const [memberEmail, setMemberEmail] = useState<Record<number, string>>({});
+  const [owned, setOwned] = useState<Record<number, CloudProvider[]>>({});
   const { toast } = useToast();
 
   const load = () => {
@@ -25,6 +27,17 @@ export default function ProjectsPage() {
       .then(setProjects)
       .catch(err => setLoadError(errorMessage(err)))
       .finally(() => setLoading(false));
+    api.get<AiSettings>('/ai')
+      .then(s => setOwned(Object.fromEntries(s.projects.map(p => [p.id, p.consent]))))
+      .catch(() => {});
+  };
+
+  const setCloud = async (projectId: number, provider: CloudProvider, allow: boolean) => {
+    try {
+      await api.put('/ai/consent', { provider, projectId, allow });
+      setOwned(prev => ({ ...prev, [projectId]: allow ? [...(prev[projectId] ?? []), provider] : (prev[projectId] ?? []).filter(x => x !== provider) }));
+      toast(allow ? 'Cloud model allowed for this project' : 'Cloud model not allowed anymore', 'success');
+    } catch (err) { toast(errorMessage(err), 'error'); }
   };
   useEffect(() => { load(); }, []);
 
@@ -102,6 +115,7 @@ export default function ProjectsPage() {
                 <th>Name</th>
                 <th>Description</th>
                 <th>Created</th>
+                <th>Cloud models</th>
                 <th>Add member</th>
               </tr>
             </thead>
@@ -111,6 +125,20 @@ export default function ProjectsPage() {
                   <td className={styles.name}>{p.name}</td>
                   <td className={styles.muted}>{p.description || '—'}</td>
                   <td className={styles.muted}>{shortDate(p.created_at)}</td>
+                  <td>
+                    {owned[p.id] ? (
+                      <div className={styles.cloud}>
+                        {CLOUD.map(c => (
+                          <label key={c.id} className={styles.cloudOption}>
+                            <input type="checkbox" checked={owned[p.id]!.includes(c.id)} onChange={e => setCloud(p.id, c.id, e.target.checked)} />
+                            {c.label}
+                          </label>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className={styles.muted}>owner decides</span>
+                    )}
+                  </td>
                   <td>
                     <form className={styles.memberForm} onSubmit={e => handleAddMember(p.id, e)}>
                       <input

@@ -2,7 +2,8 @@ import express from 'express';
 import type { Response } from 'express';
 import db from '../db.js';
 import auth from '../middleware/authMiddleware.js';
-import { ollama, localModel } from '../ai/providers/index.js';
+import { ollama } from '../ai/providers/index.js';
+import { allowedSources, assistantFor, CloudBlocked, hasConsent, type Assistant } from '../ai/cloud.js';
 import { explainPrompt, summarizePrompt, refactorPrompt, suggestPrompt } from '../ai/prompts.js';
 import { redactSecrets, containsInjection } from '../ai/safetyFilters.js';
 import { retrieve, type RetrievedChunk } from '../rag/retriever.js';
@@ -23,8 +24,12 @@ function usableSnippet(snippetId: number, userId: number, res: Response): Snippe
   return snippet;
 }
 
-async function ask(model: string | undefined, prompt: string, temperature: number) {
-  return ollama.chat({ model: await localModel(model), messages: [{ role: 'user', content: prompt }], temperature });
+function ask(a: Assistant, prompt: string, temperature: number, sourceIds: number[]) {
+  return a.provider.chat({ model: a.model, messages: [{ role: 'user', content: prompt }], temperature, sourceIds });
+}
+
+function fail(res: Response, err: unknown) {
+  res.status(err instanceof CloudBlocked ? 403 : 500).json({ error: (err as Error).message });
 }
 
 function citationsOf(chunks: RetrievedChunk[]) {
@@ -38,12 +43,17 @@ router.post('/suggest', auth, async (req, res) => {
     return;
   }
   try {
-    const raw = await ask(model, suggestPrompt(code, language), 0.3);
+    const a = await assistantFor(req.user!.id, model);
+    // unsaved code count as personal, need personal consent
+    if (a.provider.cloud && !hasConsent({ project_id: null, author_id: req.user!.id }, a.provider.id as 'anthropic' | 'openai')) {
+      throw new CloudBlocked(`Allow ${a.provider.id} for personal snippets in Settings first`);
+    }
+    const raw = await ask(a, suggestPrompt(code, language), 0.3, []);
     const match = raw.match(/\{[\s\S]*?\}/);
     const json = (match ? JSON.parse(match[0]) : {}) as { title?: string; description?: string };
     res.json({ title: json.title || '', description: json.description || '' });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    fail(res, err);
   }
 });
 
@@ -58,12 +68,13 @@ for (const action of ['explain', 'summarize'] as const) {
     const snippet = usableSnippet(Number(req.params.snippetId), req.user!.id, res);
     if (!snippet) return;
     try {
-      const { chunks } = await retrieve(snippet.title, req.user!.id, snippet.project_id);
+      const a = await assistantFor(req.user!.id, model);
+      const chunks = allowedSources(a, (await retrieve(snippet.title, req.user!.id, snippet.project_id)).chunks);
       const prompt = action === 'explain' ? explainPrompt(snippet, chunks) : summarizePrompt(snippet, chunks);
-      const raw = await ask(model, prompt, 0.2);
+      const raw = await ask(a, prompt, 0.2, [snippet.id, ...chunks.map(c => c.snippet_id)]);
       res.json({ response: redactSecrets(raw), citations: citationsOf(chunks) });
     } catch (err) {
-      res.status(500).json({ error: (err as Error).message });
+      fail(res, err);
     }
   });
 }
@@ -77,10 +88,10 @@ router.post('/refactor/:snippetId', auth, async (req, res) => {
     return;
   }
   try {
-    const raw = await ask(model, refactorPrompt(snippet), 0.3);
+    const raw = await ask(await assistantFor(req.user!.id, model), refactorPrompt(snippet), 0.3, [snippet.id]);
     res.json({ response: redactSecrets(raw), draft: true, citations: [] });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    fail(res, err);
   }
 });
 

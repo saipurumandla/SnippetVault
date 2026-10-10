@@ -20,6 +20,7 @@ import healthRoutes from './routes/health.js';
 import tokenRoutes from './routes/tokens.js';
 import draftRoutes from './routes/drafts.js';
 import mcpRoutes from './routes/mcp.js';
+import aiRoutes from './routes/ai.js';
 
 const app = express();
 
@@ -56,6 +57,7 @@ app.use('/api/assistant', assistantRoutes);
 app.use('/api/stream', streamRoutes);
 app.use('/api/tokens', tokenRoutes);
 app.use('/api/drafts', draftRoutes);
+app.use('/api/ai', aiRoutes);
 app.use('/mcp', mcpRoutes);
 app.use('/', healthRoutes);
 

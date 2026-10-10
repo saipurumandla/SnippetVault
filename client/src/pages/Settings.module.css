@@ -30,3 +30,11 @@
   align-items: flex-start;
   gap: var(--s2);
 }
+
+.sectionWide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  padding: var(--s4) 0;
+  border-top: 1px solid var(--line);
+}
