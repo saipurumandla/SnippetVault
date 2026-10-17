@@ -1,9 +1,25 @@
-import { clampTemperature, type ChatRequest, type ModelProvider } from './types.js';
+import { clampTemperature, parseArgs, type ChatMessage, type ChatRequest, type ChatTurn, type ModelProvider } from './types.js';
 
 interface OllamaChunk {
-  message?: { content?: string };
+  message?: { content?: string; tool_calls?: { id?: string; function: { name: string; arguments: unknown } }[] };
   done?: boolean;
   error?: string;
+}
+
+const TEXT_CALL = /<function=([\w-]+)>([\s\S]*?)<\/function>/g;
+const TEXT_PARAM = /<parameter=([\w-]+)>\s*([\s\S]*?)\s*<\/parameter>/g;
+
+// qwen3-coder put some tool calls in text, ollama miss them
+export function callsInText(text: string): { text: string; calls: { name: string; arguments: Record<string, unknown> }[] } {
+  const calls = [...text.matchAll(TEXT_CALL)].map(m => ({
+    name: m[1]!,
+    arguments: Object.fromEntries([...m[2]!.matchAll(TEXT_PARAM)].map(p => {
+      const raw = p[2]!;
+      return [p[1]!, /^-?\d+(\.\d+)?$/.test(raw) ? Number(raw) : raw];
+    })),
+  }));
+  const rest = text.replace(TEXT_CALL, '').replace(/<\/?tool_call>/g, '').trim();
+  return { text: calls.length ? rest : text, calls };
 }
 
 export class OllamaProvider implements ModelProvider {
@@ -13,11 +29,20 @@ export class OllamaProvider implements ModelProvider {
 
   constructor(private readonly baseUrl = `http://${process.env.OLLAMA_HOST || 'localhost'}:${process.env.OLLAMA_PORT || '11434'}`) {}
 
+  private static wire(m: ChatMessage) {
+    if (m.role === 'assistant') {
+      return { role: m.role, content: m.content, ...(m.toolCalls?.length ? { tool_calls: m.toolCalls.map(c => ({ function: { name: c.name, arguments: c.arguments } })) } : {}) };
+    }
+    if (m.role === 'tool') return { role: 'tool', content: m.content, tool_name: m.name };
+    return m;
+  }
+
   private body(req: ChatRequest, stream: boolean) {
     return JSON.stringify({
       model: req.model,
-      messages: req.messages,
+      messages: req.messages.map(OllamaProvider.wire),
       stream,
+      ...(req.tools?.length ? { tools: req.tools.map(t => ({ type: 'function', function: t })) } : {}),
       options: { temperature: clampTemperature(req.temperature), ...(req.maxTokens ? { num_predict: req.maxTokens } : {}) },
     });
   }
@@ -33,10 +58,22 @@ export class OllamaProvider implements ModelProvider {
     return res;
   }
 
-  async chat(req: ChatRequest): Promise<string> {
+  async turn(req: ChatRequest): Promise<ChatTurn> {
     const data = (await (await this.post(req, false)).json()) as OllamaChunk;
     if (data.error) throw new Error(data.error);
-    return data.message?.content ?? '';
+    const parsed = (data.message?.tool_calls ?? []).map((c, i) => ({ id: c.id ?? `call_${i}`, name: c.function.name, arguments: parseArgs(c.function.arguments) }));
+    const content = data.message?.content ?? '';
+    if (!req.tools?.length) return { text: content, toolCalls: parsed };
+
+    const fromText = callsInText(content);
+    const key = (c: { name: string; arguments: unknown }) => c.name + JSON.stringify(c.arguments);
+    const known = new Set(parsed.map(key));
+    const extra = fromText.calls.filter(c => !known.has(key(c))).map((c, i) => ({ id: `text_call_${i}`, ...c }));
+    return { text: fromText.text, toolCalls: [...parsed, ...extra] };
+  }
+
+  async chat(req: ChatRequest): Promise<string> {
+    return (await this.turn({ ...req, tools: undefined })).text;
   }
 
   async stream(req: ChatRequest, onToken: (token: string) => void): Promise<void> {

@@ -53,6 +53,10 @@ export class GuardedProvider implements ModelProvider {
     return { ...req, messages: req.messages.map(m => ({ ...m, content: redactSecrets(m.content) })) };
   }
 
+  async turn(req: ChatRequest) {
+    return this.inner.turn(this.check(req));
+  }
+
   async chat(req: ChatRequest) {
     return this.inner.chat(this.check(req));
   }

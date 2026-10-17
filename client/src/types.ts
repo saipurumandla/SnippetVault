@@ -60,3 +60,9 @@ export interface AiSettings {
   projects: { id: number; name: string; consent: CloudProvider[] }[];
   localModels: string[];
 }
+
+export interface AgentStep {
+  tool: 'search_vault' | 'get_snippet';
+  args: Record<string, unknown>;
+  found: number;
+}

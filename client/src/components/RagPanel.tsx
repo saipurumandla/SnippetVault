@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { TriangleAlert } from 'lucide-react';
+import { FileCode, Search } from 'lucide-react';
 import { renderMarkdown } from '../lib/markdown';
 import { api } from '../lib/api';
 import styles from './RagPanel.module.css';
 import { errorMessage } from '../lib/errors';
-import type { Citation } from '../types';
+import type { AgentStep, Citation } from '../types';
 
 export default function RagPanel({ onCite }: { onCite: (snippetId: number) => void }) {
   const [question, setQuestion] = useState('');
@@ -12,7 +12,8 @@ export default function RagPanel({ onCite }: { onCite: (snippetId: number) => vo
   const [citations, setCitations] = useState<Citation[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [lowConfidence, setLowConfidence] = useState(false);
+  const [steps, setSteps] = useState<AgentStep[]>([]);
+  const [stoppedEarly, setStoppedEarly] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,11 +38,13 @@ export default function RagPanel({ onCite }: { onCite: (snippetId: number) => vo
     setError('');
     setAnswer('');
     setCitations([]);
+    setSteps([]);
     try {
-      const result = await api.post<{ answer: string; citations?: Citation[]; lowConfidence?: boolean }>('/rag/ask', { question });
+      const result = await api.post<{ answer: string; citations: Citation[]; steps: AgentStep[]; stoppedEarly: boolean }>('/rag/agent', { question });
       setAnswer(result.answer);
-      setCitations(result.citations || []);
-      setLowConfidence(!!result.lowConfidence);
+      setCitations(result.citations);
+      setSteps(result.steps);
+      setStoppedEarly(result.stoppedEarly);
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -67,20 +70,28 @@ export default function RagPanel({ onCite }: { onCite: (snippetId: number) => vo
           autoFocus
         />
         <button className="btn-primary" type="submit" disabled={loading || !question.trim()}>
-          {loading ? 'Asking…' : 'Ask'}
+          {loading ? 'Searching…' : 'Ask'}
         </button>
       </form>
-      <p className={styles.hint}>Answers come from your local Ollama and only use snippets you can read.</p>
+      <p className={styles.hint}>The assistant looks things up in your vault itself, at most 6 times, and only sees snippets you can read.</p>
 
       {error && <p className={styles.error} role="alert">{error}</p>}
 
       {answer && (
         <div className={styles.answer}>
-          {lowConfidence && (
-            <p className={styles.lowConf}>
-              <TriangleAlert size={14} strokeWidth={1.75} />
-              Not enough matching snippets. Try other words, or add the snippet first.
-            </p>
+          {steps.length > 0 && (
+            <ol className={styles.steps} aria-label="What the assistant looked up">
+              {steps.map((s, i) => (
+                <li key={i}>
+                  {s.tool === 'search_vault' ? (
+                    <><Search size={12} strokeWidth={1.75} aria-hidden /> Searched “{String(s.args.query)}”{s.args.language ? ` in ${String(s.args.language)}` : ''} · {s.found} found</>
+                  ) : (
+                    <><FileCode size={12} strokeWidth={1.75} aria-hidden /> {s.found ? `Opened #${String(s.args.id)}` : `#${String(s.args.id)} not available`}</>
+                  )}
+                </li>
+              ))}
+              {stoppedEarly && <li>Stopped at the lookup limit</li>}
+            </ol>
           )}
           <div ref={bodyRef} className={styles.answerText} dangerouslySetInnerHTML={{ __html: renderMarkdown(answer) }} />
           {uniqueCitations.length > 0 && (

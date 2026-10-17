@@ -34,5 +34,6 @@ vi.mock('../src/ai/providers/ollama.js', () => ({
       return id ? `stub answer [snippet:${id}]` : 'stub answer';
     }
     async stream(_req, onToken) { onToken('stub'); }
+    async turn(req) { return { text: await this.chat(req), toolCalls: [] }; }
   },
 }));

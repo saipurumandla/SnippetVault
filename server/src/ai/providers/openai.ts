@@ -1,5 +1,17 @@
 import OpenAI from 'openai';
-import { clampTemperature, type ChatRequest, type ModelProvider } from './types.js';
+import { clampTemperature, parseArgs, type ChatMessage, type ChatRequest, type ChatTurn, type ModelProvider } from './types.js';
+
+function toWire(m: ChatMessage): OpenAI.ChatCompletionMessageParam {
+  if (m.role === 'assistant') {
+    return {
+      role: 'assistant',
+      content: m.content || null,
+      ...(m.toolCalls?.length ? { tool_calls: m.toolCalls.map(c => ({ id: c.id, type: 'function' as const, function: { name: c.name, arguments: JSON.stringify(c.arguments) } })) } : {}),
+    };
+  }
+  if (m.role === 'tool') return { role: 'tool', tool_call_id: m.toolCallId, content: m.content };
+  return { role: m.role, content: m.content };
+}
 
 export class OpenAIProvider implements ModelProvider {
   readonly id = 'openai' as const;
@@ -10,20 +22,29 @@ export class OpenAIProvider implements ModelProvider {
     this.client = new OpenAI({ apiKey, fetch: fetchImpl, maxRetries: 1 });
   }
 
-  async chat(req: ChatRequest): Promise<string> {
+  async turn(req: ChatRequest): Promise<ChatTurn> {
     const res = await this.client.chat.completions.create({
       model: req.model,
-      messages: req.messages,
+      messages: req.messages.map(toWire),
       temperature: clampTemperature(req.temperature),
       ...(req.maxTokens ? { max_completion_tokens: req.maxTokens } : {}),
+      ...(req.tools?.length ? { tools: req.tools.map(t => ({ type: 'function' as const, function: t })) } : {}),
     }, { signal: req.signal });
-    return res.choices[0]?.message.content ?? '';
+    const msg = res.choices[0]?.message;
+    return {
+      text: msg?.content ?? '',
+      toolCalls: (msg?.tool_calls ?? []).flatMap(c => (c.type === 'function' ? [{ id: c.id, name: c.function.name, arguments: parseArgs(c.function.arguments) }] : [])),
+    };
+  }
+
+  async chat(req: ChatRequest): Promise<string> {
+    return (await this.turn({ ...req, tools: undefined })).text;
   }
 
   async stream(req: ChatRequest, onToken: (token: string) => void): Promise<void> {
     const stream = await this.client.chat.completions.create({
       model: req.model,
-      messages: req.messages,
+      messages: req.messages.map(toWire),
       temperature: clampTemperature(req.temperature),
       stream: true,
     }, { signal: req.signal });
