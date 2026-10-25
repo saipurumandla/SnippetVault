@@ -13,6 +13,7 @@ import PassphrasePrompt from './PassphrasePrompt';
 import type { Draft, EncryptionMode, Project, Snippet, Visibility } from '../types';
 import styles from './SnippetEditor.module.css';
 import { vault } from '../lib/vault';
+import DuplicateDialog, { type Similar } from './DuplicateDialog';
 
 interface FieldErrors {
   title?: string;
@@ -22,6 +23,7 @@ interface FieldErrors {
 export default function SnippetEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [duplicates, setDuplicates] = useState<Similar[]>([]);
   const { theme } = useTheme();
   const { toast } = useToast();
   const isNew = !id || id === 'new';
@@ -135,7 +137,7 @@ export default function SnippetEditor() {
     return !next.title && !next.code;
   };
 
-  const handleSave = async () => {
+  const handleSave = async (skipDuplicateCheck = false) => {
     if (!validate()) return;
     const publicKey = localStorage.getItem('encPublicKey');
     if (encryptionMode === 'sensitive' && !publicKey) {
@@ -145,6 +147,15 @@ export default function SnippetEditor() {
     setSaving(true);
     try {
       const sensitive = encryptionMode === 'sensitive';
+      // sensitive code must not reach the server as plain text
+      if (isNew && !sensitive && !skipDuplicateCheck) {
+        const matches = await api.post<Similar[]>('/snippets/similar', { title: title.trim(), description: description.trim() || undefined, code }).catch(() => []);
+        if (matches.length) {
+          setDuplicates(matches);
+          setSaving(false);
+          return;
+        }
+      }
       const body = {
         title: title.trim(),
         description: description.trim() || undefined,
@@ -199,6 +210,14 @@ export default function SnippetEditor() {
   return (
     <div>
       <Header />
+      {duplicates.length > 0 && (
+        <DuplicateDialog
+          matches={duplicates}
+          onOpen={dupId => navigate(`/snippet/${dupId}`)}
+          onSaveAnyway={() => { setDuplicates([]); handleSave(true); }}
+          onCancel={() => setDuplicates([])}
+        />
+      )}
       {locked && (
         <PassphrasePrompt onUnlock={key => unlock(locked, key)} onCancel={() => navigate(`/snippet/${id}`)} />
       )}
@@ -209,7 +228,7 @@ export default function SnippetEditor() {
             {isNew ? 'Vault' : 'Back'}
           </button>
           <h1 className={styles.heading}>{draftId ? 'Review draft' : isNew ? 'New snippet' : 'Edit snippet'}</h1>
-          <button className="btn-primary" onClick={handleSave} disabled={saving || loading || !!locked}>
+          <button className="btn-primary" onClick={() => handleSave()} disabled={saving || loading || !!locked}>
             {saving ? 'Saving…' : 'Save snippet'}
           </button>
         </div>

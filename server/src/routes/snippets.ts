@@ -5,6 +5,7 @@ import { snippetSchema, validate, type SnippetInput } from '../validation.js';
 import { removeFromIndex } from '../rag/indexer.js';
 import { createSnippet, reindex } from '../snippets.js';
 import { ftsPrefix } from '../rag/fts.js';
+import { findSimilar } from '../rag/dedupe.js';
 import type { SnippetRow } from '../types.js';
 
 const router = express.Router();
@@ -77,6 +78,15 @@ router.get('/', auth, (req, res) => {
     ORDER BY s.updated_at DESC
   `).all(...params) as SnippetWithTags[];
   res.json(withTagList(rows));
+});
+
+router.post('/similar', auth, async (req, res) => {
+  const { title = '', description, code } = req.body as { title?: string; description?: string; code?: string };
+  if (typeof code !== 'string' || !code.trim() || code.length > 200_000) {
+    res.status(400).json({ error: 'code required' });
+    return;
+  }
+  res.json(await findSimilar(req.user!.id, { title: String(title), description, code }));
 });
 
 router.get('/:id', auth, (req, res) => {

@@ -70,6 +70,7 @@ describe('SnippetEditor', () => {
     const sent = calls.find(c => c.url === '/api/snippets')?.body as { code: string; wrapped_key: string; encryption_mode: string };
     expect(sent.encryption_mode).toBe('sensitive');
     expect(sent.code).not.toContain('hunter2');
+    expect(calls.some(c => c.url === '/api/snippets/similar')).toBe(false);
     expect(JSON.parse(sent.wrapped_key)).toEqual({ scheme: 'sealed', v: 1 });
     expect(await openSealed(sent.code, publicKey, privateKey)).toBe('hunter2-very-secret');
   });
@@ -91,4 +92,37 @@ describe('SnippetEditor', () => {
     expect(calls.find(c => c.url === '/api/drafts/3/accept')?.body).toEqual({ snippet_id: 21 });
     expect(calls.find(c => c.url === '/api/snippets')?.body).toMatchObject({ title: 'Sleep helper', code: 'sleep(1)', language: 'python' });
   });
+
+  it('asks before saving a near copy of an existing snippet', async () => {
+    const calls = mockApi({
+      'GET /projects': [],
+      'POST /snippets/similar': [{ id: 12, title: 'Read PORT from env', language: 'javascript', similarity: 0.93 }],
+      'POST /snippets': (body: unknown) => ({ id: 8, ...(body as object), tags: [] }),
+    });
+    const user = userEvent.setup();
+    renderPage(<SnippetEditor />, { path: '/snippet/new' });
+    await user.type(screen.getByPlaceholderText(/snippet title/i), 'Port from env');
+    await user.type(screen.getByLabelText('code'), 'process.env.PORT');
+    await user.click(screen.getByRole('button', { name: /save snippet/i }));
+
+    expect(await screen.findByText('You may already have this')).toBeInTheDocument();
+    expect(screen.getByText(/#12 · javascript · 93% similar/)).toBeInTheDocument();
+    expect(calls.some(c => c.url === '/api/snippets' && c.method === 'POST')).toBe(false);
+
+    await user.click(screen.getByRole('button', { name: 'Save anyway' }));
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/snippet/8'));
+    expect(calls.filter(c => c.url === '/api/snippets/similar')).toHaveLength(1);
+  });
+
+  it('opens the existing snippet instead', async () => {
+    mockApi({ 'GET /projects': [], 'POST /snippets/similar': [{ id: 12, title: 'Read PORT from env', language: 'javascript', similarity: 1 }] });
+    const user = userEvent.setup();
+    renderPage(<SnippetEditor />, { path: '/snippet/new' });
+    await user.type(screen.getByPlaceholderText(/snippet title/i), 'Port');
+    await user.type(screen.getByLabelText('code'), 'process.env.PORT');
+    await user.click(screen.getByRole('button', { name: /save snippet/i }));
+    await user.click(await screen.findByRole('button', { name: /Read PORT from env/ }));
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/snippet/12'));
+  });
 });
+
