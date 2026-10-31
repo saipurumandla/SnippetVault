@@ -1,7 +1,7 @@
 import { useState, useEffect, type KeyboardEvent } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router';
 import Editor from '@monaco-editor/react';
-import { ArrowLeft, Lock, TriangleAlert, X } from 'lucide-react';
+import { ArrowLeft, Lock, TriangleAlert, X, Plus } from 'lucide-react';
 import { api } from '../lib/api';
 import { SEALED_WRAPPED_KEY, decryptSensitive, sealForSelf, sensitiveScheme } from '../lib/crypto';
 import { errorMessage } from '../lib/errors';
@@ -40,6 +40,8 @@ export default function SnippetEditor() {
   const [expiresAt, setExpiresAt] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+  const [tagIdeas, setTagIdeas] = useState<{ tag: string; from: 'similar' | 'model' }[] | null>(null);
+  const [suggestingTags, setSuggestingTags] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [loadError, setLoadError] = useState('');
@@ -110,6 +112,22 @@ export default function SnippetEditor() {
   };
 
   const removeTag = (t: string) => setTags(prev => prev.filter(x => x !== t));
+
+  const suggestTags = async () => {
+    setSuggestingTags(true);
+    try {
+      setTagIdeas(await api.post<{ tag: string; from: 'similar' | 'model' }[]>('/assistant/tags', { title, description, code, language, tags }));
+    } catch (err) {
+      toast(errorMessage(err), 'error');
+    } finally {
+      setSuggestingTags(false);
+    }
+  };
+
+  const takeIdea = (t: string) => {
+    if (!tags.includes(t)) setTags(prev => [...prev, t]);
+    setTagIdeas(prev => prev?.filter(x => x.tag !== t) ?? null);
+  };
 
   const handleTagKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); }
@@ -317,7 +335,14 @@ export default function SnippetEditor() {
             )}
 
             <div>
-              <label className="field-label" htmlFor="tags">Tags</label>
+              <div className={styles.tagHead}>
+                <label className="field-label" htmlFor="tags">Tags</label>
+                {encryptionMode === 'standard' && (
+                  <button type="button" className={styles.linkBtn} onClick={suggestTags} disabled={suggestingTags || !code.trim()}>
+                    {suggestingTags ? 'Thinking…' : 'Suggest tags'}
+                  </button>
+                )}
+              </div>
               <div className={styles.tagBox}>
                 {tags.map(t => (
                   <span key={t} className={`badge ${styles.tag}`}>
@@ -330,6 +355,23 @@ export default function SnippetEditor() {
                 <input id="tags" className={styles.tagInput} placeholder="Add tag, press Enter" value={tagInput}
                   onChange={e => setTagInput(e.target.value)} onKeyDown={handleTagKey} onBlur={addTag} />
               </div>
+              {tagIdeas && (
+                <div className={styles.ideas} aria-label="Suggested tags">
+                  {tagIdeas.length === 0 ? (
+                    <span className={styles.ideaNote}>No ideas for this one.</span>
+                  ) : (
+                    <>
+                      <span className={styles.ideaNote}>Click to add:</span>
+                      {tagIdeas.map(i => (
+                        <button key={i.tag} type="button" className={styles.idea} onClick={() => takeIdea(i.tag)}
+                          title={i.from === 'similar' ? 'used on similar snippets' : 'suggested by the assistant'}>
+                          <Plus size={12} strokeWidth={2} aria-hidden />{i.tag}
+                        </button>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>

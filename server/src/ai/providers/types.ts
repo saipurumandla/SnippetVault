@@ -24,6 +24,8 @@ export interface ChatRequest {
   maxTokens?: number;
   signal?: AbortSignal;
   tools?: ToolDef[];
+  // json schema, ollama force it, cloud only by prompt
+  format?: Record<string, unknown>;
   // snippets used in the prompt, cloud guard checks them
   sourceIds?: number[];
 }

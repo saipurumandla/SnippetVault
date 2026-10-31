@@ -124,5 +124,21 @@ describe('SnippetEditor', () => {
     await user.click(await screen.findByRole('button', { name: /Read PORT from env/ }));
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/snippet/12'));
   });
+
+  it('suggests tags but only adds the ones you click', async () => {
+    const calls = mockApi({
+      'GET /projects': [],
+      'POST /assistant/tags': [{ tag: 'retry', from: 'similar' }, { tag: 'backoff', from: 'model' }],
+    });
+    const user = userEvent.setup();
+    renderPage(<SnippetEditor />, { path: '/snippet/new' });
+    await user.type(screen.getByLabelText('code'), 'retry(fn)');
+    await user.click(screen.getByRole('button', { name: 'Suggest tags' }));
+
+    await user.click(await screen.findByRole('button', { name: 'backoff' }));
+    expect(screen.getByRole('button', { name: 'Remove tag backoff' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remove tag retry' })).not.toBeInTheDocument();
+    expect(calls.find(c => c.url === '/api/assistant/tags')?.body).toMatchObject({ code: 'retry(fn)', tags: [] });
+  });
 });
 

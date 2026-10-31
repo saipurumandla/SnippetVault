@@ -43,6 +43,7 @@ export class OllamaProvider implements ModelProvider {
       messages: req.messages.map(OllamaProvider.wire),
       stream,
       ...(req.tools?.length ? { tools: req.tools.map(t => ({ type: 'function', function: t })) } : {}),
+      ...(req.format ? { format: req.format } : {}),
       options: { temperature: clampTemperature(req.temperature), ...(req.maxTokens ? { num_predict: req.maxTokens } : {}) },
     });
   }

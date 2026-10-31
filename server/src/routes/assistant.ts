@@ -3,7 +3,8 @@ import type { Response } from 'express';
 import db from '../db.js';
 import auth from '../middleware/authMiddleware.js';
 import { ollama } from '../ai/providers/index.js';
-import { allowedSources, assistantFor, CloudBlocked, hasConsent, type Assistant } from '../ai/cloud.js';
+import { allowedSources, assertPersonalCloud, assistantFor, CloudBlocked, type Assistant } from '../ai/cloud.js';
+import { suggestTags } from '../rag/autotag.js';
 import { explainPrompt, summarizePrompt, refactorPrompt, suggestPrompt } from '../ai/prompts.js';
 import { redactSecrets, containsInjection } from '../ai/safetyFilters.js';
 import { retrieve, type RetrievedChunk } from '../rag/retriever.js';
@@ -44,14 +45,26 @@ router.post('/suggest', auth, async (req, res) => {
   }
   try {
     const a = await assistantFor(req.user!.id, model);
-    // unsaved code count as personal, need personal consent
-    if (a.provider.cloud && !hasConsent({ project_id: null, author_id: req.user!.id }, a.provider.id as 'anthropic' | 'openai')) {
-      throw new CloudBlocked(`Allow ${a.provider.id} for personal snippets in Settings first`);
-    }
+    assertPersonalCloud(a, req.user!.id);
     const raw = await ask(a, suggestPrompt(code, language), 0.3, []);
     const match = raw.match(/\{[\s\S]*?\}/);
     const json = (match ? JSON.parse(match[0]) : {}) as { title?: string; description?: string };
     res.json({ title: json.title || '', description: json.description || '' });
+  } catch (err) {
+    fail(res, err);
+  }
+});
+
+router.post('/tags', auth, async (req, res) => {
+  const { title = '', description, code, language, tags = [], model } = req.body as { title?: string; description?: string; code?: string; language?: string; tags?: string[]; model?: string };
+  if (!code || !code.trim() || code.length > 200_000) {
+    res.status(400).json({ error: 'code required' });
+    return;
+  }
+  try {
+    const a = await assistantFor(req.user!.id, model);
+    assertPersonalCloud(a, req.user!.id);
+    res.json(await suggestTags(req.user!.id, { title, description, code, language, tags: Array.isArray(tags) ? tags.map(String) : [] }, a));
   } catch (err) {
     fail(res, err);
   }

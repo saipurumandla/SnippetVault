@@ -70,6 +70,13 @@ export class GuardedProvider implements ModelProvider {
   }
 }
 
+// unsaved code from the editor count as personal snippet
+export function assertPersonalCloud(a: { provider: ModelProvider }, userId: number) {
+  if (a.provider.cloud && !hasConsent({ project_id: null, author_id: userId }, a.provider.id as CloudId)) {
+    throw new CloudBlocked(`Allow ${a.provider.id} for personal snippets in Settings first`);
+  }
+}
+
 export interface Assistant {
   provider: ModelProvider;
   model: string;
