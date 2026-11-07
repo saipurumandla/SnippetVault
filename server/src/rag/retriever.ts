@@ -2,12 +2,15 @@ import db from '../db.js';
 import { embed } from './embedder.js';
 import { config } from '../config.js';
 import { ftsAnyOf } from './fts.js';
+import { rerankScores } from './rerank.js';
 import { READABLE, readableParams } from '../access.js';
 
 const TOP_K = 10;
 const BM25_WEIGHT = 0.4;
 const VEC_WEIGHT = 0.6;
 const MIN_BM25_HITS = 1;
+const RERANK_CANDIDATES = 20;
+const FINAL_K = 5;
 
 export interface RetrievedChunk {
   chunk_id: number;
@@ -73,6 +76,18 @@ function vectorSearch(queryEmbedding: number[], userId: number, projectId: numbe
   return rows.map(({ distance, ...r }) => ({ ...r, score: 1 - distance }));
 }
 
+async function rerankIfOn<T extends RetrievedChunk & { finalScore: number }>(query: string, chunks: T[]): Promise<T[]> {
+  if (!config.rerank || !config.embeddings || chunks.length < 2) return chunks;
+  try {
+    const scores = await rerankScores(query, chunks.map(c => `${c.title}\n${c.text}`));
+    return chunks.map((c, i) => ({ c, s: scores[i]! })).sort((a, b) => b.s - a.s).map(x => x.c);
+  } catch (err) {
+    // keep hybrid order when model cant load
+    console.error('rerank failed, using hybrid order:', (err as Error).message);
+    return chunks;
+  }
+}
+
 export async function retrieve(query: string, userId: number, projectId: number | null = null): Promise<RetrieveResult> {
   const bm25Results = bm25Search(query, userId, projectId);
   if (bm25Results.length < MIN_BM25_HITS) {
@@ -90,10 +105,11 @@ export async function retrieve(query: string, userId: number, projectId: number 
   });
 
   const unique = [...new Map([...bm25Results, ...vecResults].map(r => [r.chunk_id, r])).values()];
-  const ranked = unique
+  const fused = unique
     .map(c => ({ ...c, finalScore: scores.get(c.chunk_id) || 0 }))
     .sort((a, b) => b.finalScore - a.finalScore)
-    .slice(0, 5);
+    .slice(0, RERANK_CANDIDATES);
 
+  const ranked = (await rerankIfOn(query, fused)).slice(0, FINAL_K);
   return { chunks: ranked, lowConfidence: false };
 }

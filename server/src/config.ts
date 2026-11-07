@@ -11,6 +11,7 @@ export const config = {
   logLevel: process.env.LOG_LEVEL || 'info',
   masterKey: process.env.MASTER_KEY || '',
   embeddings: process.env.EMBEDDINGS !== 'off',
+  rerank: process.env.RERANK !== 'off',
 };
 
 export function isMain(metaUrl: string): boolean {

@@ -23,6 +23,14 @@ function fakeEmbed(text) {
 
 vi.mock('../src/rag/embedder.js', () => ({ embed: async (text) => fakeEmbed(text) }));
 
+// cross encoder is 23mb too, word overlap is enough for tests
+vi.mock('../src/rag/rerank.js', () => ({
+  rerankScores: vi.fn(async (query, docs) => {
+    const words = query.toLowerCase().split(/\W+/).filter(Boolean);
+    return docs.map(d => words.filter(w => d.toLowerCase().includes(w)).length);
+  }),
+}));
+
 // tests never talk to a real ollama, even if it run
 vi.mock('../src/ai/providers/ollama.js', () => ({
   OllamaProvider: class {
