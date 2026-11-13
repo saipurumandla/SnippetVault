@@ -19,7 +19,8 @@
     "lint": "eslint . && stylelint \"client/src/**/*.css\" --config client/.stylelintrc.json",
     "test": "npm run build -w @snippetvault/api-client && npm test --workspaces --if-present",
     "migrate": "npm run migrate -w server",
-    "index": "npm run index -w server"
+    "index": "npm run index -w server",
+    "eval": "tsx eval/run.mts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
