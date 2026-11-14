@@ -36,16 +36,17 @@ function bm25Search(query: string, userId: number, projectId: number | null): Re
   let filter = '';
   if (projectId) { filter = ' AND s.project_id = ?'; params.push(projectId); }
 
+  // no order by here took first rows by id, not best
   return db.prepare(`
     SELECT rc.id as chunk_id, rc.snippet_id, rc.text, rc.chunk_index, rc.project_id,
            s.title, s.language
-    FROM rag_chunks rc
-    JOIN snippets s ON s.id = rc.snippet_id
-    WHERE s.id IN (
-      SELECT rowid FROM snippets_fts WHERE snippets_fts MATCH ?
-    )
+    FROM snippets_fts
+    JOIN snippets s ON s.id = snippets_fts.rowid
+    JOIN rag_chunks rc ON rc.snippet_id = s.id
+    WHERE snippets_fts MATCH ?
     AND ${READABLE}
     ${filter}
+    ORDER BY bm25(snippets_fts), rc.chunk_index
     LIMIT ${TOP_K}
   `).all(...params) as RetrievedChunk[];
 }

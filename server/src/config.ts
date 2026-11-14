@@ -11,7 +11,8 @@ export const config = {
   logLevel: process.env.LOG_LEVEL || 'info',
   masterKey: process.env.MASTER_KEY || '',
   embeddings: process.env.EMBEDDINGS !== 'off',
-  rerank: process.env.RERANK !== 'off',
+  // eval: no gain once bm25 order was fixed, 35x slower
+  rerank: process.env.RERANK === 'on',
 };
 
 export function isMain(metaUrl: string): boolean {

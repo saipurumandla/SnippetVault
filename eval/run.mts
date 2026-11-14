@@ -41,8 +41,8 @@ for (const q of questions) {
 
 const MODES = [
   { name: 'Keyword only (FTS5)', embeddings: false, rerank: false },
-  { name: 'Hybrid (FTS5 + vectors)', embeddings: true, rerank: false },
-  { name: 'Hybrid + reranker', embeddings: true, rerank: true },
+  { name: 'Hybrid (FTS5 + vectors), default', embeddings: true, rerank: false },
+  { name: 'Hybrid + reranker (RERANK=on)', embeddings: true, rerank: true },
 ];
 
 interface Row { mode: string; r1: number; r3: number; r5: number; mrr: number; mrrKeyword: number; mrrParaphrase: number; ms: number; misses: string[] }
@@ -79,7 +79,7 @@ for (const mode of MODES) {
 
 const f = (x: number) => x.toFixed(3);
 const kinds = { keyword: questions.filter(q => q.kind === 'keyword').length, paraphrase: questions.filter(q => q.kind === 'paraphrase').length };
-const best = rows[rows.length - 1]!;
+const best = rows.find(r => r.mode.endsWith('default'))!;
 const report = `# Retrieval eval
 
 ${corpus.length} snippets in ${new Set(corpus.map(c => c.language)).size} languages, ${questions.length} labelled questions
@@ -94,7 +94,7 @@ ${rows.map(r => `| ${r.mode} | ${f(r.r1)} | ${f(r.r3)} | ${f(r.r5)} | ${f(r.mrr)
 - MRR@5: 1 / rank of the first relevant snippet, 0 if none in the top 5
 - Models: embeddings \`${EMBED_MODEL}\`, reranker \`${RERANK_MODEL}\`, both q8 on CPU
 
-## Not found in the top 5 (${best.mode.toLowerCase()})
+## Not found in the top 5 (default mode)
 
 ${best.misses.length ? best.misses.map(m => `- ${m}`).join('\n') : 'None.'}
 `;

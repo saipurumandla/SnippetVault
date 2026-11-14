@@ -1,11 +1,12 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { newUser, newSnippet } from './helpers.js';
 import { retrieve } from '../src/rag/retriever.ts';
 import { rerankScores } from '../src/rag/rerank.ts';
 import { config } from '../src/config.ts';
 
 const settle = () => new Promise(r => setTimeout(r, 50));
-afterEach(() => { config.rerank = true; vi.mocked(rerankScores).mockClear(); });
+beforeEach(() => { config.rerank = true; });
+afterEach(() => { config.rerank = false; vi.mocked(rerankScores).mockClear(); });
 
 async function vault() {
   const u = await newUser();
@@ -35,7 +36,7 @@ describe('reranker', () => {
     expect(err).toHaveBeenCalled();
   });
 
-  it('is skipped with RERANK=off', async () => {
+  it('is off unless RERANK=on', async () => {
     const { u } = await vault();
     config.rerank = false;
     await retrieve('cache', u.id);
