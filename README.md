@@ -1,6 +1,6 @@
 # SnippetVault
 
-Self-hosted, local-first code snippet manager for developer teams. Store, tag, search and share code snippets. Sensitive snippets are encrypted in the browser, and the assistant runs on your own Ollama.
+Self-hosted, local-first code snippet manager for developer teams. Store, tag, search and share code snippets. Sensitive snippets are encrypted in the browser, and the assistant runs on your own Ollama by default.
 
 Screenshots and a walk through: [DEMO.md](DEMO.md). UI rules: [DESIGN.md](DESIGN.md).
 
@@ -91,6 +91,10 @@ npm run index
 | `OLLAMA_DEFAULT_MODEL`| qwen3-coder:30b      | Model used for explain/summarize/refactor     |
 | `RAG_MODEL`           | qwen3-coder:30b      | Model used for RAG answer generation         |
 | `EMBEDDINGS`          | on                   | `off` skips the embedding model, Ask your vault is off |
+| `MASTER_KEY`          | *(none)*             | 64 hex chars, needed to store cloud API keys |
+| `RERANK`              | off                  | `on` adds a cross encoder reranker, see the eval first |
+| `AGENT_TIMEOUT_MS`    | 90000                | Time limit for one Ask your vault question   |
+| `DUPLICATE_THRESHOLD` | 0.85                 | Similarity for the duplicate warning         |
 
 ---
 
@@ -124,17 +128,23 @@ Sensitive mode: your private key is generated in the browser, encrypted with you
 - Sensitive snippet expiry — set a date/time after which the snippet is hidden and moved to the Expired tab
 - Encrypted backup / restore — AES-256-GCM, key derived from your passphrase on the server (scrypt). Use a passphrase only for backups
 
-### RAG Search Assistant
-Ask natural-language questions across your snippet knowledge base:
-- Hybrid retrieval: BM25 keyword match (SQLite FTS5) + vector search with [sqlite-vec](https://github.com/asg017/sqlite-vec) (local embeddings via `@huggingface/transformers`)
-- Citation-first — answers that don't cite a source snippet are blocked from rendering
-- `#N` references and the source buttons select that snippet in the vault preview
-- Prompt-injection defenses on all retrieval paths
-- Sensitive encrypted snippets excluded from indexing
+### Ask your vault
+Ask a question in plain words. The assistant looks things up itself:
+- Tools `search_vault` and `get_snippet`, at most 6 lookups and a time limit per question
+- Search is hybrid: keyword match (SQLite FTS5, ranked by bm25) plus vectors with [sqlite-vec](https://github.com/asg017/sqlite-vec), local embeddings via `@huggingface/transformers`
+- Every answer must cite the snippets it used, uncited answers are not shown
+- The panel shows each lookup, and `#N` or a source button opens that snippet
+- Only snippets you can read, never sensitive ones, never expired ones
 
-**Indexing is automatic** — snippets are indexed in the background whenever you create or edit them. No manual `npm run index` needed (though it still works as a one-time backfill for existing snippets).
+New and edited snippets are indexed when saved. `npm run index` rebuilds everything.
 
-### Local Ollama AI assistant
+Quality is measured, not guessed: see [Retrieval eval](#retrieval-eval).
+
+### Duplicates and tags
+- Saving a new snippet that looks like one you already have (same code, or 85%+ similar) asks first: open the existing one, or save anyway
+- **Suggest tags** in the editor offers tags from similar snippets and from the model. Nothing is added until you click it
+
+### Assistant actions
 Per-snippet actions on the detail page:
 
 | Action | Description |
@@ -150,6 +160,16 @@ All actions stream into a side sheet:
 - Convert: **Save as new snippet** gets a title from the model, then saves a new private snippet
 
 **Suggest title** (in the snippet editor) reads your code and fills title and description.
+
+### Assistant model
+Local Ollama is the default and nothing leaves your server. In **Settings** you can switch
+to Anthropic or OpenAI with your own API key:
+- The key is stored encrypted with `MASTER_KEY`, only the last 4 characters are shown again
+- A cloud model only sees snippets whose owner allowed it: you for personal snippets, the
+  project owner for project snippets (Projects page)
+- Sensitive snippets are blocked at the provider boundary, not only in the UI, and the same
+  secret filter runs on everything sent out. Tests in `server/test/cloud.test.js` cover it
+- Model ids come from settings, nothing is hardcoded
 
 ### UI
 See [DESIGN.md](DESIGN.md). Short version:
@@ -216,7 +236,26 @@ OLLAMA_DEFAULT_MODEL=qwen3-coder:30b
 RAG_MODEL=qwen3-coder:30b
 ```
 
-Approved models: `qwen3-coder:30b`, `qwen2.5-coder`, `qwen2.5-coder:7b`, `llama3.1`, `llama3.1:8b`, `mistral`.
+Any model installed in Ollama can be used, Settings lists them. Tool calling needs a model
+that supports tools, `qwen3-coder:30b` works well.
+
+---
+
+## Retrieval eval
+
+`npm run eval` loads 42 snippets in 13 languages into a temporary database and asks 52
+labelled questions (18 use the snippet's own words, 34 say it another way). No model judges
+anything, the labels are in [eval/questions.json](eval/questions.json).
+
+| Mode | Recall@1 | Recall@5 | MRR@5 | MRR paraphrase | ms / query |
+|---|---|---|---|---|---|
+| Keyword only (FTS5) | 0.736 | 0.851 | 0.793 | 0.684 | 0 |
+| **Hybrid, default** | **0.832** | **0.918** | **0.870** | **0.801** | 2 |
+| Hybrid + reranker | 0.813 | 0.880 | 0.851 | 0.772 | 74 |
+
+The first run of the eval found that keyword matches were not ordered by score at all
+(MRR 0.314). After that fix the reranker did not help anymore and costs 35x the time, so it
+is off by default. Full report: [eval/REPORT.md](eval/REPORT.md).
 
 ---
 

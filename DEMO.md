@@ -171,6 +171,38 @@ Copied #1 Retry fetch with exponential backoff
 
 ---
 
+## Ask your vault, with lookups
+
+![Ask with lookups](docs/screenshots/19-ask-with-lookups.png)
+
+The assistant searches the vault itself, here once for both parts of the question, and
+cites what it used. Each lookup is listed above the answer. At most 6 per question.
+
+---
+
+## Duplicates and tag ideas
+
+![Duplicate check](docs/screenshots/20-duplicate-check.png)
+
+Saving something you already have asks first. This copy had other variable names and
+still matched at 87%.
+
+![Tag ideas](docs/screenshots/21-tag-ideas.png)
+
+**Suggest tags** offers tags from similar snippets and from the model. Click the ones you
+want, nothing is added by itself.
+
+---
+
+## Assistant model
+
+![Assistant settings](docs/screenshots/18-assistant-settings.png)
+
+Local Ollama by default. With your own key Anthropic or OpenAI can be used, but only for
+snippets you (or the project owner) allowed. Sensitive snippets never go out.
+
+---
+
 ## Storage modes
 
 | Mode | Stored as | Search | Assistant | Who can read |
@@ -190,7 +222,8 @@ Copied #1 Retry fetch with exponential backoff
 | Auth | JWT + bcrypt |
 | Search | SQLite FTS5 + sqlite-vec |
 | Embeddings | @huggingface/transformers (all-MiniLM-L6-v2) |
-| Assistant | Ollama on your machine, qwen3-coder:30b by default |
+| Assistant | Ollama on your machine by default (qwen3-coder:30b), opt-in Anthropic or OpenAI with your key |
+| Retrieval | FTS5 bm25 + sqlite-vec, optional cross encoder reranker, eval in `eval/` |
 | Encryption | libsodium in the browser, AES-256-GCM for backups |
 | Agents | MCP server (stdio and Streamable HTTP), `@modelcontextprotocol/sdk` |
 | Terminal and editor | `sv` CLI (commander), VS Code extension, one shared typed API client |
