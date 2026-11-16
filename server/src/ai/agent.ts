@@ -28,7 +28,7 @@ const TOOLS: ToolDef[] = [
 ];
 
 const SYSTEM = `You answer questions about the user's own code snippets.
-Use search_vault to find snippets and get_snippet to read the full code.
+Always use search_vault first, then get_snippet to read the full code. Never answer from memory.
 
 Rules:
 - Only use code that the tools returned. If nothing fits, say so.
@@ -104,6 +104,11 @@ export async function runAgent(assistant: Assistant, userId: number, question: s
       signal,
       sourceIds: [...seen.keys()],
     });
+    // model can answer from memory, search with the question then
+    if (!turn.toolCalls.length && calls === 0) {
+      turn.text = '';
+      turn.toolCalls = [{ id: 'forced_search', name: 'search_vault', arguments: { query: question } }];
+    }
     if (lastRound || !turn.toolCalls.length) {
       final = turn.text;
       break;

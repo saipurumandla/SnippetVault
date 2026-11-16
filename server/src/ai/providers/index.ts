@@ -7,7 +7,7 @@ export type * from './types.js';
 
 export const ollama = new OllamaProvider();
 
-export const DEFAULT_MODEL = process.env.OLLAMA_DEFAULT_MODEL || 'qwen3-coder:30b';
+export const DEFAULT_MODEL = process.env.OLLAMA_DEFAULT_MODEL || 'qwen3.6:27b';
 
 export function cloudProvider(id: Exclude<ProviderId, 'ollama'>, apiKey: string, fetchImpl?: typeof fetch): ModelProvider {
   if (!apiKey) throw new Error(`No API key set for ${id}`);

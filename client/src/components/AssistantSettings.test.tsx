@@ -6,7 +6,7 @@ import { mockApi, renderPage } from '../test/render';
 import type { AiSettings } from '../types';
 
 const base: AiSettings = {
-  provider: 'ollama', canStoreKeys: true, keys: [], personalConsent: [], projects: [], localModels: ['qwen3-coder:30b'],
+  provider: 'ollama', canStoreKeys: true, keys: [], personalConsent: [], projects: [], localModels: ['qwen3.6:27b'],
 };
 
 describe('AssistantSettings', () => {
@@ -22,7 +22,7 @@ describe('AssistantSettings', () => {
     const user = userEvent.setup();
     renderPage(<AssistantSettings />);
 
-    expect(await screen.findByText(/1 installed: qwen3-coder:30b/)).toBeInTheDocument();
+    expect(await screen.findByText(/1 installed: qwen3.6:27b/)).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /anthropic/i })).toBeDisabled();
 
     const form = screen.getByRole('form', { name: /anthropic key/i });

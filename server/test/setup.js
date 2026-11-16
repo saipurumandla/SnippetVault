@@ -36,7 +36,7 @@ vi.mock('../src/ai/providers/ollama.js', () => ({
   OllamaProvider: class {
     id = 'ollama';
     cloud = false;
-    async models() { return ['qwen3-coder:30b']; }
+    async models() { return ['qwen3.6:27b', 'qwen3-coder:30b']; }
     async chat({ messages, format }) {
       if (format) return '{"tags": ["Stub-Tag", "python", "data"]}';
       const id = messages.map(m => m.content).join('\n').match(/\[snippet:(\d+)\]/)?.[1];

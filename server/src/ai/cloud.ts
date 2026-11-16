@@ -1,7 +1,7 @@
 import db from '../db.js';
 import { openSecret } from '../keystore.js';
 import { redactSecrets } from './safetyFilters.js';
-import { cloudProvider, localModel, ollama } from './providers/index.js';
+import { cloudProvider, DEFAULT_MODEL, localModel, ollama } from './providers/index.js';
 import type { ChatRequest, ModelProvider, ProviderId } from './providers/types.js';
 
 export type CloudId = Exclude<ProviderId, 'ollama'>;
@@ -85,6 +85,13 @@ export interface Assistant {
 export function chosenProvider(userId: number): ProviderId {
   const row = db.prepare('SELECT provider FROM ai_settings WHERE user_id = ?').get(userId) as { provider: ProviderId } | undefined;
   return row?.provider ?? 'ollama';
+}
+
+export function activeModel(userId: number): { provider: ProviderId; model: string } {
+  const provider = chosenProvider(userId);
+  if (provider === 'ollama') return { provider, model: DEFAULT_MODEL };
+  const row = db.prepare('SELECT model FROM ai_keys WHERE user_id = ? AND provider = ?').get(userId, provider) as { model: string } | undefined;
+  return { provider, model: row?.model ?? '' };
 }
 
 export function cloudFor(userId: number, id: CloudId, fetchImpl?: typeof fetch): Assistant {

@@ -88,8 +88,8 @@ npm run index
 | `LOG_LEVEL`           | info                 | pino log level                               |
 | `OLLAMA_HOST`         | localhost            | Ollama server host                           |
 | `OLLAMA_PORT`         | 11434                | Ollama server port                           |
-| `OLLAMA_DEFAULT_MODEL`| qwen3-coder:30b      | Model used for explain/summarize/refactor     |
-| `RAG_MODEL`           | qwen3-coder:30b      | Model used for RAG answer generation         |
+| `OLLAMA_DEFAULT_MODEL`| qwen3.6:27b          | Model used for explain/summarize/refactor     |
+| `RAG_MODEL`           | qwen3.6:27b          | Model used for RAG answer generation         |
 | `EMBEDDINGS`          | on                   | `off` skips the embedding model, Ask your vault is off |
 | `MASTER_KEY`          | *(none)*             | 64 hex chars, needed to store cloud API keys |
 | `RERANK`              | off                  | `on` adds a cross encoder reranker, see the eval first |
@@ -226,18 +226,20 @@ CI builds both as artifacts (`.vsix` and a `.tgz`), nothing is published.
 Install Ollama, then pull a model:
 
 ```bash
-ollama pull qwen3-coder:30b
+ollama pull qwen3.6:27b
 ```
 
 The assistant panel detects Ollama availability on load. Change the default model in `.env`:
 
 ```
-OLLAMA_DEFAULT_MODEL=qwen3-coder:30b
-RAG_MODEL=qwen3-coder:30b
+OLLAMA_DEFAULT_MODEL=qwen3.6:27b
+RAG_MODEL=qwen3.6:27b
 ```
 
 Any model installed in Ollama can be used, Settings lists them. Tool calling needs a model
-that supports tools, `qwen3-coder:30b` works well.
+that supports tools. `qwen3.6:27b` is the default (about 17 GB, fits one 24 GB GPU).
+`qwen3-coder:30b` is about 10x faster and a bit less exact, good on smaller machines.
+Thinking is off by default, `OLLAMA_THINK=on` turns it on (about 3x slower).
 
 ---
 

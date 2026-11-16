@@ -222,7 +222,7 @@ snippets you (or the project owner) allowed. Sensitive snippets never go out.
 | Auth | JWT + bcrypt |
 | Search | SQLite FTS5 + sqlite-vec |
 | Embeddings | @huggingface/transformers (all-MiniLM-L6-v2) |
-| Assistant | Ollama on your machine by default (qwen3-coder:30b), opt-in Anthropic or OpenAI with your key |
+| Assistant | Ollama on your machine by default (qwen3.6:27b), opt-in Anthropic or OpenAI with your key |
 | Retrieval | FTS5 bm25 + sqlite-vec, optional cross encoder reranker, eval in `eval/` |
 | Encryption | libsodium in the browser, AES-256-GCM for backups |
 | Agents | MCP server (stdio and Streamable HTTP), `@modelcontextprotocol/sdk` |

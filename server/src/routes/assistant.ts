@@ -3,7 +3,7 @@ import type { Response } from 'express';
 import db from '../db.js';
 import auth from '../middleware/authMiddleware.js';
 import { ollama } from '../ai/providers/index.js';
-import { allowedSources, assertPersonalCloud, assistantFor, CloudBlocked, type Assistant } from '../ai/cloud.js';
+import { activeModel, allowedSources, assertPersonalCloud, assistantFor, CloudBlocked, type Assistant } from '../ai/cloud.js';
 import { suggestTags } from '../rag/autotag.js';
 import { explainPrompt, summarizePrompt, refactorPrompt, suggestPrompt } from '../ai/prompts.js';
 import { redactSecrets, containsInjection } from '../ai/safetyFilters.js';
@@ -72,7 +72,9 @@ router.post('/tags', auth, async (req, res) => {
 
 router.get('/models', auth, async (req, res) => {
   const models = await ollama.models();
-  res.json({ available: models.length > 0, models });
+  const active = activeModel(req.user!.id);
+  const available = active.provider === 'ollama' ? models.includes(active.model) : !!active.model;
+  res.json({ available, models, active });
 });
 
 for (const action of ['explain', 'summarize'] as const) {

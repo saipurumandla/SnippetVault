@@ -104,6 +104,22 @@ describe('assistant tool loop', () => {
   });
 });
 
+describe('model that skips the tools', () => {
+  it('still searches with the question before answering', async () => {
+    const u = await newUser();
+    const s = await newSnippet(u, { title: 'Graceful shutdown', code: 'srv.Shutdown(ctx) on interrupt' });
+    await settle();
+    const { assistant, seen } = scripted([
+      { text: 'From memory: call srv.Shutdown.', toolCalls: [] },
+      { text: `Use this [snippet:${s.id}].`, toolCalls: [] },
+    ]);
+    const res = await runAgent(assistant, u.id, 'graceful shutdown');
+    expect(res.steps[0]).toMatchObject({ tool: 'search_vault', args: { query: 'graceful shutdown' } });
+    expect(res.citations.map(c => c.snippetId)).toEqual([s.id]);
+    expect(seen[1].messages.some(m => m.role === 'assistant' && m.content.includes('From memory'))).toBe(false);
+  });
+});
+
 describe('route', () => {
   it('answers through the local model and checks input', async () => {
     const u = await newUser();

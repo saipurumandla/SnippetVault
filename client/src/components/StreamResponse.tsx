@@ -29,7 +29,6 @@ function stripCodeBlocks(text: string): string {
 interface Props {
   snippetId: string;
   action: AiAction;
-  model: string;
   language: string;
   targetLanguage?: string;
   snippetTitle?: string;
@@ -37,7 +36,7 @@ interface Props {
   onApplied?: (code: string) => void;
 }
 
-export default function StreamResponse({ snippetId, action, model, language, targetLanguage, snippetTitle, onClose, onApplied }: Props) {
+export default function StreamResponse({ snippetId, action, language, targetLanguage, snippetTitle, onClose, onApplied }: Props) {
   const [tokens, setTokens] = useState('');
   const [citations, setCitations] = useState<Citation[]>([]);
   const [done, setDone] = useState(false);
@@ -50,7 +49,7 @@ export default function StreamResponse({ snippetId, action, model, language, tar
 
   useEffect(() => {
     const token = localStorage.getItem('token') || '';
-    let url = `/api/stream/${action}/${snippetId}?model=${encodeURIComponent(model)}&token=${encodeURIComponent(token)}`;
+    let url = `/api/stream/${action}/${snippetId}?token=${encodeURIComponent(token)}`;
     if (action === 'convert' && targetLanguage) url += `&target_lang=${encodeURIComponent(targetLanguage)}`;
     const es = new EventSource(url);
     esRef.current = es;
@@ -64,7 +63,7 @@ export default function StreamResponse({ snippetId, action, model, language, tar
 
     es.onerror = () => { setError('Stream connection lost'); es.close(); setDone(true); };
     return () => es.close();
-  }, [snippetId, action, model, targetLanguage]);
+  }, [snippetId, action, targetLanguage]);
 
   const handleApply = async () => {
     const extracted = extractCodeBlock(tokens);

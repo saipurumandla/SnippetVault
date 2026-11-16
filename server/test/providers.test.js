@@ -44,7 +44,7 @@ describe('ollama provider', () => {
     const p = new OllamaProvider(o.url);
     const out = await p.chat({ model: 'qwen3-coder:30b', messages: [{ role: 'user', content: 'hi' }], temperature: 1.5 });
     expect(out).toBe('hi there');
-    expect(o.seen[0]).toMatchObject({ path: '/api/chat', body: { stream: false, options: { temperature: 0.7 } } });
+    expect(o.seen[0]).toMatchObject({ path: '/api/chat', body: { stream: false, think: false, options: { temperature: 0.7 } } });
   });
 
   it('streams even when a json line is cut between chunks', async () => {
@@ -133,7 +133,7 @@ describe('provider registry', () => {
 
   it('only allows models ollama has installed', async () => {
     await expect(localModel('qwen3-coder:30b')).resolves.toBe('qwen3-coder:30b');
-    await expect(localModel()).resolves.toBe('qwen3-coder:30b');
+    await expect(localModel()).resolves.toBe('qwen3.6:27b');
     await expect(localModel('../../etc/passwd')).rejects.toThrow(/not installed/);
   });
 });

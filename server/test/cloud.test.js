@@ -3,6 +3,7 @@ import { app, request, newUser, newSnippet } from './helpers.js';
 import db from '../src/db.ts';
 import { config } from '../src/config.ts';
 import { GuardedProvider, CloudBlocked } from '../src/ai/cloud.ts';
+import { DEFAULT_MODEL } from '../src/ai/providers/index.ts';
 
 const KEY = 'sk-test-0123456789-wxyz';
 const STRIPE = process.env.TEST_STRIPE_LIVE_KEY;
@@ -59,6 +60,17 @@ describe('api keys', () => {
     const u = await cloudUser();
     await request(app).delete('/api/ai/keys/anthropic').set('Authorization', u.auth).expect(204);
     expect((await request(app).get('/api/ai').set('Authorization', u.auth)).body.provider).toBe('ollama');
+  });
+});
+
+describe('active model', () => {
+  it('reports what the assistant will really use', async () => {
+    const u = await newUser();
+    const local = await request(app).get('/api/assistant/models').set('Authorization', u.auth);
+    expect(local.body).toMatchObject({ available: true, active: { provider: 'ollama', model: DEFAULT_MODEL } });
+    const c = await cloudUser();
+    const cloud = await request(app).get('/api/assistant/models').set('Authorization', c.auth);
+    expect(cloud.body.active).toEqual({ provider: 'anthropic', model: 'some-model' });
   });
 });
 

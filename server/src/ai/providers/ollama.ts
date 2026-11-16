@@ -42,6 +42,8 @@ export class OllamaProvider implements ModelProvider {
       model: req.model,
       messages: req.messages.map(OllamaProvider.wire),
       stream,
+      // thinking make qwen3.6 ~3x slower, not worth it here
+      think: process.env.OLLAMA_THINK === 'on',
       ...(req.tools?.length ? { tools: req.tools.map(t => ({ type: 'function', function: t })) } : {}),
       ...(req.format ? { format: req.format } : {}),
       options: { temperature: clampTemperature(req.temperature), ...(req.maxTokens ? { num_predict: req.maxTokens } : {}) },

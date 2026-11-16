@@ -34,7 +34,7 @@ export default function SnippetDetail() {
   const [convertLang, setConvertLang] = useState('python');
   const [ollamaAvailable, setOllamaAvailable] = useState(false);
   const [loadError, setLoadError] = useState('');
-  const [ollamaModel, setOllamaModel] = useState('qwen3-coder:30b');
+  const [active, setActive] = useState<{ provider: string; model: string } | null>(null);
   const [clipTimer, setClipTimer] = useState(0);
   const [copied, setCopied] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -58,9 +58,9 @@ export default function SnippetDetail() {
       })
       .catch(err => setLoadError(errorMessage(err)));
 
-    api.get<{ available: boolean; models: string[] }>('/assistant/models').then(d => {
+    api.get<{ available: boolean; active: { provider: string; model: string } }>('/assistant/models').then(d => {
       setOllamaAvailable(d.available);
-      if (d.models[0]) setOllamaModel(d.models[0]);
+      setActive(d.active);
     }).catch(() => {});
 
     return () => { clearTimeout(unlockTimer.current); clearInterval(clipInterval.current); };
@@ -282,7 +282,6 @@ export default function SnippetDetail() {
               <StreamResponse
                 snippetId={id!}
                 action={aiAction}
-                model={ollamaModel}
                 language={snippet.language}
                 targetLanguage={convertLang}
                 snippetTitle={snippet.title}
@@ -301,10 +300,14 @@ export default function SnippetDetail() {
               {isSensitive ? (
                 <p className={styles.sideNote}>Not available for sensitive snippets. Their code never leaves your browser.</p>
               ) : !ollamaAvailable ? (
-                <p className={styles.sideNote}>Ollama is not running. Start it to explain, summarize or refactor this snippet.</p>
+                <p className={styles.sideNote}>
+                  {active?.provider === 'ollama' ? `Ollama is not running or ${active.model} is not installed. Start it, or pick another model in Settings.` : 'The assistant model is not set up. See Settings.'}
+                </p>
               ) : (
                 <>
-                  <p className={styles.sideNote}>Runs on {ollamaModel}, on this machine.</p>
+                  <p className={styles.sideNote}>
+                    {active?.provider === 'ollama' ? `Runs on ${active.model}, on this machine.` : `Runs on ${active?.provider} (${active?.model}) with your key.`}
+                  </p>
                   <div className={styles.sideActions}>
                     <button className="btn-ghost" aria-pressed={aiAction === 'explain'} onClick={() => toggleAction('explain')}>Explain</button>
                     <button className="btn-ghost" aria-pressed={aiAction === 'summarize'} onClick={() => toggleAction('summarize')}>Summarize</button>
